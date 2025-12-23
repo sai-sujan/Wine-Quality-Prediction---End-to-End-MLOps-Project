@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source zenml_env/bin/activate)",
+      "Bash(mlflow ui:*)"
+    ]
+  }
+}

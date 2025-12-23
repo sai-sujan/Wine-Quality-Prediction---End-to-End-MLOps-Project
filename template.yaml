@@ -45,13 +45,11 @@ Resources:
           Properties:
             Path: /predict
             Method: post
-            RestApiId: !Ref ApiGateway
         PredictOptions:
           Type: Api
           Properties:
             Path: /predict
             Method: options
-            RestApiId: !Ref ApiGateway
 
   # Health check function
   HealthCheckFunction:
@@ -68,49 +66,6 @@ Resources:
           Properties:
             Path: /health
             Method: get
-            RestApiId: !Ref ApiGateway
-
-  # API Gateway
-  ApiGateway:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: prod
-      Cors:
-        AllowMethods: "'POST, GET, OPTIONS'"
-        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key'"
-        AllowOrigin: "'*'"
-      DefinitionBody:
-        swagger: '2.0'
-        info:
-          title: Customer Satisfaction Prediction API
-          version: '1.0'
-        paths:
-          /predict:
-            post:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PredictionFunction.Arn}/invocations'
-              responses:
-                '200':
-                  description: Successful prediction
-            options:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PredictionFunction.Arn}/invocations'
-              responses:
-                '200':
-                  description: CORS support
-          /health:
-            get:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HealthCheckFunction.Arn}/invocations'
-              responses:
-                '200':
-                  description: Health check
 
 Outputs:
   ApiUrl:

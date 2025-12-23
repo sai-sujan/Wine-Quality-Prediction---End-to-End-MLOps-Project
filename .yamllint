@@ -1,0 +1,11 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 120
+  comments:
+    min-spaces-from-content: 1
+  # Ignore CloudFormation intrinsic functions
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off']

@@ -89,12 +89,13 @@ coverage.xml
 .dmypy.json
 dmypy.json
 
-# Data files (optional - remove if you want to commit data)
-*.csv
-*.xlsx
-*.json
+# Data files (large datasets)
+data/*.csv
+data/*.xlsx
+# Keep small config files
 !requirements.json
 !package.json
+!template.yaml
 
 # Model files (if stored locally)
 *.pkl

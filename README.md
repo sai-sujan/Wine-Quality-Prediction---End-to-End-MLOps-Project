@@ -81,6 +81,17 @@ Data Ingestion → Data Cleaning → Model Training → Evaluation
 - ZenML (Pipeline Orchestration)
 - Pandas, NumPy
 
+**API & Development:**
+- FastAPI (Local Development & Testing)
+- Uvicorn (ASGI Server)
+- Pydantic (Data Validation)
+- Auto-generated API Documentation
+
+**UI & Visualization:**
+- Streamlit (Production Dashboard)
+- Plotly (Interactive Charts)
+- Real-time Monitoring & Analytics
+
 **Deployment:**
 - AWS Lambda (Serverless Compute)
 - AWS API Gateway (REST API)
@@ -127,11 +138,19 @@ zenml stack set mlflow_stack
 # 5. Run the training pipeline
 python run_pipeline.py
 
-# 6. View MLflow UI
+# 6. Start FastAPI server (for local testing)
+./run_api.sh
+# Open http://localhost:8000/docs
+
+# 7. View MLflow UI
 mlflow ui --backend-store-uri "file:$HOME/Library/Application Support/zenml/local_stores/*/mlruns"
 # Open http://localhost:5000
 
-# 7. Run deployment pipeline
+# 8. Start Streamlit Dashboard (Production UI)
+./run_dashboard.sh
+# Open http://localhost:8501
+
+# 9. Run deployment pipeline
 python run_deployment.py --config deploy_and_predict
 ```
 
@@ -193,15 +212,45 @@ fcc_mlops_project/
 │   └── model_dev.py                  # Model development code
 ├── model/
 │   └── model_dev.py                  # Model implementations
-├── lambda_function.py                # AWS Lambda handler
+├── api.py                            # FastAPI application (local dev)
+├── lambda_function.py                # AWS Lambda handler (production)
+├── streamlit_dashboard.py            # Streamlit production UI
 ├── template.yaml                     # AWS SAM template
 ├── deploy_aws.sh                     # AWS deployment script
 ├── upload_model.sh                   # Model upload script
 ├── test_api.sh                       # API testing script
+├── run_api.sh                        # Start FastAPI server
+├── run_dashboard.sh                  # Start Streamlit dashboard
 ├── run_pipeline.py                   # Training pipeline runner
 ├── run_deployment.py                 # Deployment pipeline runner
 └── requirements.txt                  # Python dependencies
 ```
+
+## 🎨 Streamlit Prediction Dashboard
+
+A simple, clean web interface for making customer satisfaction predictions!
+
+### Features
+
+- **🔮 Interactive Predictions** - Make predictions with a beautiful form and gauge visualization
+- **📊 Real-time API Status** - Automatic check if prediction service is running
+- **🎯 Simple & Focused** - Just predictions, no complexity
+- **💻 Professional UI** - Clean design with color-coded results
+
+### Quick Start
+
+```bash
+# Terminal 1: Start FastAPI (required)
+./run_api.sh
+
+# Terminal 2: Start Streamlit Dashboard
+./run_dashboard.sh
+
+# Open in browser
+http://localhost:8501
+```
+
+**Guide:** See [STREAMLIT_SIMPLE_GUIDE.md](STREAMLIT_SIMPLE_GUIDE.md)
 
 ## 📡 API Documentation
 
