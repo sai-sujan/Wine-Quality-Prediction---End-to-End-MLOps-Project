@@ -1,0 +1,153 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda_function.py'
+      - 'template.yaml'
+      - 'requirements.txt'
+      - 'lambda_requirements.txt'
+      - '.github/workflows/deploy-aws.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+  STACK_NAME: customer-satisfaction-mlops
+
+jobs:
+  deploy:
+    name: Deploy to AWS Lambda
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deploy.outputs.api_url }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup AWS SAM
+      uses: aws-actions/setup-sam@v2
+      with:
+        use-installer: true
+
+    - name: Build SAM application
+      run: |
+        sam build --template-file template.yaml
+
+    - name: Deploy SAM application
+      id: deploy
+      run: |
+        sam deploy \
+          --template-file .aws-sam/build/template.yaml \
+          --stack-name ${{ env.STACK_NAME }} \
+          --capabilities CAPABILITY_IAM \
+          --region ${{ env.AWS_REGION }} \
+          --no-confirm-changeset \
+          --no-fail-on-empty-changeset \
+          --resolve-s3
+
+    - name: Get API URL
+      id: get-url
+      run: |
+        API_URL=$(aws cloudformation describe-stacks \
+          --stack-name ${{ env.STACK_NAME }} \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`PredictionEndpoint`].OutputValue' \
+          --output text)
+        echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+        echo "API_URL=$API_URL" >> $GITHUB_ENV
+
+    - name: Upload model to S3
+      run: |
+        MODEL_BUCKET=$(aws cloudformation describe-stacks \
+          --stack-name ${{ env.STACK_NAME }} \
+          --region ${{ env.AWS_REGION }} \
+          --query 'Stacks[0].Outputs[?OutputKey==`ModelBucketName`].OutputValue' \
+          --output text)
+
+        # Download latest model artifact from GitHub Actions artifacts
+        # Or upload from a specific location
+        echo "Model bucket: $MODEL_BUCKET"
+        # aws s3 cp ./model s3://$MODEL_BUCKET/models/production/model/ --recursive
+
+    - name: Test deployed API
+      run: |
+        echo "Testing API at: ${{ env.API_URL }}"
+
+        RESPONSE=$(curl -s -X POST ${{ env.API_URL }} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "payment_sequential": 1,
+            "payment_installments": 3,
+            "payment_value": 100.0,
+            "price": 80.0,
+            "freight_value": 10.0,
+            "product_name_lenght": 50,
+            "product_description_lenght": 200,
+            "product_photos_qty": 3,
+            "product_weight_g": 1000,
+            "product_length_cm": 20,
+            "product_height_cm": 10,
+            "product_width_cm": 15
+          }')
+
+        echo "API Response: $RESPONSE"
+
+        # Check if response contains "prediction"
+        if echo "$RESPONSE" | grep -q "prediction"; then
+          echo "✅ API test passed"
+        else
+          echo "❌ API test failed"
+          exit 1
+        fi
+
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment:** ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Region:** ${{ env.AWS_REGION }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Stack:** ${{ env.STACK_NAME }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Endpoints" >> $GITHUB_STEP_SUMMARY
+        echo "- **API URL:** ${{ env.API_URL }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Status" >> $GITHUB_STEP_SUMMARY
+        echo "Deployment completed successfully!" >> $GITHUB_STEP_SUMMARY
+
+    - name: Notify on failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: '🚨 AWS Deployment Failed',
+            body: `Deployment to AWS failed in workflow run: ${context.runId}\n\nCheck the logs: https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            labels: ['deployment', 'bug']
+          })

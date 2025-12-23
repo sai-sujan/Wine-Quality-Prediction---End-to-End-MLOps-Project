@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database for MLflow
+  postgres:
+    image: postgres:15-alpine
+    container_name: mlflow-postgres
+    environment:
+      POSTGRES_DB: mlflow
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: mlflow_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mlops-network
+
+  # MinIO for artifact storage (S3-compatible)
+  minio:
+    image: minio/minio:latest
+    container_name: mlflow-minio
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio_password
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mlops-network
+
+  # MLflow tracking server
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    container_name: mlflow-server
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=postgresql://mlflow:mlflow_password@postgres:5432/mlflow
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+      - AWS_ACCESS_KEY_ID=minio
+      - AWS_SECRET_ACCESS_KEY=minio_password
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://mlflow:mlflow_password@postgres:5432/mlflow
+      --default-artifact-root s3://mlflow/artifacts
+      --host 0.0.0.0
+      --port 5000
+    networks:
+      - mlops-network
+
+  # ZenML server
+  zenml:
+    build:
+      context: .
+      dockerfile: Dockerfile.zenml
+    container_name: zenml-server
+    environment:
+      - ZENML_STORE_URL=sqlite:////zenml/zenml.db
+      - ZENML_DEFAULT_USER_NAME=default
+      - ZENML_DEFAULT_USER_PASSWORD=zenml_password
+    volumes:
+      - zenml_data:/zenml
+    ports:
+      - "8080:8080"
+    command: >
+      zenml server --host 0.0.0.0 --port 8080
+    networks:
+      - mlops-network
+
+  # Model serving with MLflow
+  model-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.model
+    container_name: model-server
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mlflow
+    networks:
+      - mlops-network
+
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
+  zenml_data:
+    driver: local
+
+networks:
+  mlops-network:
+    driver: bridge

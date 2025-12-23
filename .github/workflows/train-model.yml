@@ -1,0 +1,96 @@
+name: Train Model
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: 'Model to train'
+        required: true
+        default: 'LinearRegressionModel'
+        type: choice
+        options:
+          - LinearRegressionModel
+          - lightgbm
+          - xgboost
+          - randomforest
+      fine_tuning:
+        description: 'Enable hyperparameter tuning'
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # Run weekly on Sundays at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  train:
+    name: Train ML Model
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Download training data
+      run: |
+        # If you have data in S3 or elsewhere, download it here
+        echo "Using local data or download from storage"
+
+    - name: Initialize ZenML
+      run: |
+        zenml init
+        zenml integration install mlflow -y
+
+    - name: Setup MLflow tracking
+      env:
+        MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI || 'file:./mlruns' }}
+      run: |
+        echo "MLflow tracking URI: $MLFLOW_TRACKING_URI"
+
+    - name: Train model
+      env:
+        MODEL_NAME: ${{ github.event.inputs.model_name || 'LinearRegressionModel' }}
+        FINE_TUNING: ${{ github.event.inputs.fine_tuning || 'false' }}
+      run: |
+        python run_pipeline.py
+
+    - name: Upload model artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: trained-model
+        path: |
+          mlruns/
+          **/*.pkl
+          **/*.joblib
+        retention-days: 30
+
+    - name: Upload training metrics
+      uses: actions/upload-artifact@v4
+      with:
+        name: training-metrics
+        path: |
+          mlruns/**/*metrics*
+        retention-days: 90
+
+    - name: Comment on PR with results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🤖 Model training completed! Check the artifacts for details.'
+          })
