@@ -109,3 +109,5 @@ data/*.xlsx
 *.swp
 tmp/
 temp/
+
+FASTAPI_BENEFITS.md

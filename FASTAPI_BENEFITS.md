@@ -81,24 +81,7 @@ if payment_value <= 0:
 # Repeat for every field...
 ```
 
-### 5. **Better for Interviews/Demos**
 
-**Show recruiters:**
-```bash
-# Start API
-./run_api.sh
-
-# Open browser
-http://localhost:8000/docs
-
-# Live demo:
-- Click endpoint
-- Click "Try it out"
-- Click "Execute"
-- Show instant prediction!
-```
-
-**Impression:** 🤩 "Wow, professional API with docs!"
 
 ## 🏗️ Perfect Architecture
 

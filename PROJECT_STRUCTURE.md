@@ -58,17 +58,6 @@ fcc_mlops_project/
 └── PROJECT_STRUCTURE.md        # This file
 ```
 
-## 🗑️ Files Removed
-
-The following unnecessary files have been removed:
-
-- ✅ `streamlit_app.py` - Not needed for deployment
-- ✅ `docker-compose.yml` - Using AWS Lambda instead
-- ✅ `Dockerfile.*` - Not needed for serverless
-- ✅ `deployment-guide.md` - Duplicate (kept AWS_DEPLOYMENT_GUIDE.md)
-- ✅ `DEPLOYMENT_INSTRUCTIONS.md` - Duplicate
-- ✅ `.env.example` - Not needed
-- ✅ `Makefile` - Using shell scripts instead
 
 ## 📝 Key Files
 
