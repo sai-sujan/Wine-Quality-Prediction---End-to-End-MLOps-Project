@@ -15,8 +15,12 @@ if __name__ == "__main__":
     - fine_tuning: Enable hyperparameter optimization with Optuna
     """
 
-    # Print MLflow tracking URI
-    print(Client().active_stack.experiment_tracker.get_tracking_uri())
+    # Print tracking URI if experiment tracker is configured
+    experiment_tracker = Client().active_stack.experiment_tracker
+    if experiment_tracker:
+        print(f"MLflow tracking URI: {experiment_tracker.get_tracking_uri()}")
+    else:
+        print("No experiment tracker configured - using default MLflow settings")
 
     # Configure data ingestion
     data_config = DataConfig(
