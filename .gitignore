@@ -111,3 +111,6 @@ tmp/
 temp/
 
 FASTAPI_BENEFITS.md
+# Lambda deployment packages
+lambda_deployment.zip
+lambda_package/
