@@ -71,11 +71,11 @@ jobs:
         zenml integration install mlflow -y
         python run_aws.py
 
-    - name: Deploy Lambda function
+    - name: Deploy Lambda function with Layer
       if: ${{ github.event.inputs.deploy_lambda == 'true' || github.event_name == 'push' }}
       run: |
-        chmod +x deploy_lambda.sh
-        ./deploy_lambda.sh
+        chmod +x deploy_lambda_with_layer.sh
+        ./deploy_lambda_with_layer.sh
 
     - name: Get Lambda endpoint
       id: lambda-url
