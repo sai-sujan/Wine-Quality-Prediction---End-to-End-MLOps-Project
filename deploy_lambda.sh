@@ -81,6 +81,15 @@ rm -rf lambda_package
 echo "✅ Deployment package created: lambda_deployment.zip"
 echo ""
 
+# Upload deployment package to S3
+S3_PACKAGE_KEY="lambda-deployments/lambda_deployment_$(date +%Y%m%d_%H%M%S).zip"
+
+echo "📤 Uploading deployment package to S3..."
+aws s3 cp lambda_deployment.zip "s3://${BUCKET_NAME}/${S3_PACKAGE_KEY}" \
+    --region "$REGION"
+echo "✅ Package uploaded to s3://${BUCKET_NAME}/${S3_PACKAGE_KEY}"
+echo ""
+
 # Create IAM role for Lambda
 echo "🔐 Creating IAM role..."
 ROLE_NAME="wine-quality-lambda-role"
@@ -156,7 +165,8 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" &
     echo "🔄 Updating existing function..."
     aws lambda update-function-code \
         --function-name "$FUNCTION_NAME" \
-        --zip-file fileb://lambda_deployment.zip \
+        --s3-bucket "$BUCKET_NAME" \
+        --s3-key "$S3_PACKAGE_KEY" \
         --region "$REGION"
 
     # Wait for update to complete before updating configuration
@@ -176,7 +186,7 @@ else
         --runtime "$RUNTIME" \
         --role "$ROLE_ARN" \
         --handler lambda_handler.lambda_handler \
-        --zip-file fileb://lambda_deployment.zip \
+        --code "S3Bucket=${BUCKET_NAME},S3Key=${S3_PACKAGE_KEY}" \
         --timeout 30 \
         --memory-size 1024 \
         --environment "Variables={S3_BUCKET_NAME=${BUCKET_NAME}}" \
@@ -236,3 +246,12 @@ echo "   Set AWS Lambda URL to: ${API_ENDPOINT}"
 echo ""
 echo "📊 View Lambda logs:"
 echo "   aws logs tail /aws/lambda/${FUNCTION_NAME} --follow --region ${REGION}"
+echo ""
+echo "📦 Deployment package stored at:"
+echo "   s3://${BUCKET_NAME}/${S3_PACKAGE_KEY}"
+
+# Cleanup local zip file
+echo ""
+echo "🧹 Cleaning up local deployment package..."
+rm -f lambda_deployment.zip
+echo "✅ Cleanup complete!"
