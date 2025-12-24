@@ -7,17 +7,17 @@ echo ""
 
 # Step 1: Setup S3
 echo "📦 Step 1/3: Setting up S3 bucket..."
-./setup_s3.sh
+./deployment/aws/scripts/setup_s3.sh
 echo ""
 
 # Step 2: Train and upload model
 echo "🧠 Step 2/3: Training model and uploading to S3..."
-./train_aws.sh
+./deployment/aws/scripts/train_aws.sh
 echo ""
 
 # Step 3: Deploy Lambda
-echo "⚡ Step 3/3: Deploying Lambda function..."
-./deploy_lambda.sh
+echo "⚡ Step 3/3: Deploying Lambda function with Layer..."
+./deployment/aws/scripts/deploy_lambda_with_layer.sh
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

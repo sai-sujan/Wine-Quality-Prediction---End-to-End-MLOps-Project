@@ -1,11 +1,11 @@
 from zenml import pipeline
-from steps.ingest_data import ingest_df
-from steps.clean_data import clean_df
-from steps.model_train import train_model
-from steps.evaluation import evaluate_model
-from steps.save_model import save_model
+from src.steps.ingest_data import ingest_df
+from src.steps.clean_data import clean_df
+from src.steps.model_train import train_model
+from src.steps.evaluation import evaluate_model
+from src.steps.save_model import save_model
 import logging
-from steps.config import ModelNameConfig, DataConfig
+from src.steps.config import ModelNameConfig, DataConfig
 
 @pipeline(enable_cache=True)
 def train_pipeline(data_config: DataConfig, model_config: ModelNameConfig):

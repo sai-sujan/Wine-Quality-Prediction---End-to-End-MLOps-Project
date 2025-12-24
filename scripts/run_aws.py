@@ -1,6 +1,6 @@
 import os
-from pipelines.training_pipeline import train_pipeline
-from steps.config import ModelNameConfig, DataConfig
+from src.pipelines.training_pipeline import train_pipeline
+from src.steps.config import ModelNameConfig, DataConfig
 from zenml.client import Client
 
 if __name__ == "__main__":

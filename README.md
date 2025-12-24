@@ -168,10 +168,10 @@ zenml stack register mlflow_stack \
 zenml stack set mlflow_stack
 
 # 5. Run the training pipeline
-python run_pipeline.py
+python scripts/run_local.py
 
 # 6. Start FastAPI server (for local testing)
-./run_api.sh
+python src/api/main.py
 # Open http://localhost:8000/docs
 
 # 7. View MLflow UI
@@ -179,11 +179,8 @@ mlflow ui --backend-store-uri "file:$HOME/Library/Application Support/zenml/loca
 # Open http://localhost:5000
 
 # 8. Start Streamlit Dashboard (Production UI)
-./run_dashboard.sh
+streamlit run src/dashboard/streamlit_app.py
 # Open http://localhost:8501
-
-# 9. Run deployment pipeline
-python run_deployment.py --config deploy_and_predict
 ```
 
 ## ☁️ AWS Deployment
@@ -210,14 +207,18 @@ aws configure
 ### Deploy to AWS
 
 ```bash
-# 1. Deploy infrastructure and Lambda function
-./deploy_aws.sh
+# Complete AWS deployment (setup S3, train model, deploy Lambda)
+./deployment/aws/scripts/deploy_all.sh
 
-# 2. Upload trained model to S3
-./upload_model.sh
+# Or run individual steps:
+# 1. Setup S3 bucket
+./deployment/aws/scripts/setup_s3.sh
 
-# 3. Test the API
-./test_api.sh
+# 2. Train and upload model to S3
+./deployment/aws/scripts/train_aws.sh
+
+# 3. Deploy Lambda function with Layer
+./deployment/aws/scripts/deploy_lambda_with_layer.sh
 ```
 
 Your API will be available at:
@@ -277,11 +278,11 @@ A beautiful, interactive web interface for making wine quality predictions!
 ### Quick Start
 
 ```bash
-# Terminal 1: Start FastAPI (required)
-./run_api.sh
+# Terminal 1: Start FastAPI (for local predictions)
+python src/api/main.py
 
 # Terminal 2: Start Streamlit Dashboard
-./run_dashboard.sh
+streamlit run src/dashboard/streamlit_app.py
 
 # Open in browser
 http://localhost:8501
@@ -508,7 +509,7 @@ sam --version
 **Model not found error:**
 ```bash
 # Train a model first
-python run_pipeline.py
+python scripts/run_local.py
 ```
 
 ## 📚 Learn More

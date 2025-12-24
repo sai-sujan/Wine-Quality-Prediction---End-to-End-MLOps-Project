@@ -67,10 +67,10 @@ import os
 import numpy as np
 import pandas as pd
 # from materializer.custom_materializer import cs_materializer
-from steps.clean_data import clean_df
-from steps.evaluation import evaluate_model as evaluation
-from steps.ingest_data import ingest_df as ingest_data
-from steps.model_train import train_model
+from src.steps.clean_data import clean_df
+from src.steps.evaluation import evaluate_model as evaluation
+from src.steps.ingest_data import ingest_df as ingest_data
+from src.steps.model_train import train_model
 from zenml import pipeline, step
 from zenml.config import DockerSettings
 from zenml.constants import DEFAULT_SERVICE_START_STOP_TIMEOUT
@@ -80,7 +80,7 @@ from zenml.integrations.mlflow.model_deployers.mlflow_model_deployer import (
 )
 from zenml.integrations.mlflow.services import MLFlowDeploymentService
 from zenml.integrations.mlflow.steps import mlflow_model_deployer_step
-from steps.config import ModelNameConfig
+from src.steps.config import ModelNameConfig
 from pydantic import BaseModel
 
 from .utils import get_data_for_test

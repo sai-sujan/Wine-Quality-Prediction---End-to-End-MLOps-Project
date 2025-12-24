@@ -283,7 +283,7 @@ if __name__ == "__main__":
     print("🍷 Predict wine quality from physicochemical properties")
 
     uvicorn.run(
-        "api:app",
+        "src.api.main:app",
         host="0.0.0.0",
         port=8000,
         reload=True,

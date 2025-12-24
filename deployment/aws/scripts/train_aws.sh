@@ -26,7 +26,7 @@ echo "☁️  Model will be uploaded to s3://wine-quality-mlops-sujan/models/"
 echo "☁️  Parameters will be uploaded to s3://wine-quality-mlops-sujan/hyperparameters/"
 echo ""
 
-python run_aws.py
+python ./scripts/run_aws.py
 
 echo ""
 echo "✅ AWS training complete!"

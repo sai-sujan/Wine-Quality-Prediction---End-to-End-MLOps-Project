@@ -109,12 +109,14 @@ echo "📦 Step 2: Creating minimal deployment package..."
 mkdir -p lambda_package
 cd lambda_package
 
-# Copy Lambda handler
-cp ../lambda/handler.py lambda_handler.py
+# Copy Lambda handler (from deployment/aws/lambda/)
+cp "$(dirname "$0")/../lambda/handler.py" lambda_handler.py
 
-# Copy s3_utils
-mkdir -p src
-cp ../../../src/utils/s3_utils.py src/ 2>/dev/null || touch src/__init__.py
+# Copy s3_utils (from src/utils/)
+mkdir -p src/utils
+cp "$(dirname "$0")/../../../src/utils/s3_utils.py" src/utils/ 2>/dev/null || true
+touch src/__init__.py
+touch src/utils/__init__.py
 
 # NO dependencies installed - they come from layer
 echo "📏 Package size: $(du -sh . | cut -f1)"
