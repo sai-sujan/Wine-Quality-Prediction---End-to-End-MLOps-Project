@@ -16,12 +16,12 @@ echo "💾 Model will be saved to: model.pkl"
 echo "💾 Parameters saved to: best_params.json"
 echo ""
 
-python run_local.py
+python scripts/run_local.py
 
 echo ""
 echo "✅ Local training complete!"
 echo "📁 Model saved to: model.pkl"
 echo ""
 echo "Next steps:"
-echo "  ./run_api.sh          - Start local API server"
-echo "  ./run_dashboard.sh    - Start Streamlit dashboard"
+echo "  python src/api/main.py              - Start local API server"
+echo "  streamlit run src/dashboard/streamlit_app.py  - Start Streamlit dashboard"
