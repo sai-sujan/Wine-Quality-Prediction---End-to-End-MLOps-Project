@@ -34,22 +34,9 @@ cp ../lambda_handler.py .
 mkdir -p src
 cp ../src/s3_utils.py src/ 2>/dev/null || touch src/__init__.py
 
-# Install only scikit-learn (slim version)
-echo "📦 Installing scikit-learn..."
-pip install --target . \
-    scikit-learn \
-    --platform manylinux2014_x86_64 \
-    --implementation cp \
-    --python-version 3.12 \
-    --only-binary=:all: \
-    --upgrade \
-    -q
-
-# Remove unnecessary files to reduce size
-find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
-find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
-find . -name "*.pyc" -delete
-find . -name "*.pyo" -delete
+# DO NOT install scikit-learn - it will come from Lambda Layer
+# This keeps package size minimal (<5MB vs >70MB)
+echo "📦 Package contains only handler code (scikit-learn from Lambda Layer)"
 
 # Create zip file (exclude unnecessary files)
 echo "🗜️  Creating deployment zip..."
@@ -134,6 +121,10 @@ fi
 # Get role ARN
 ROLE_ARN=$(aws iam get-role --role-name "$ROLE_NAME" --query 'Role.Arn' --output text)
 
+# Lambda Layer with scikit-learn (public community layer)
+# This layer includes: scikit-learn, pandas, numpy, scipy
+SKLEARN_LAYER_ARN="arn:aws:lambda:${REGION}:446751924810:layer:python-3-12-scikit-learn-1-5-0:2"
+
 # Create or update Lambda function
 echo "🔧 Deploying Lambda function..."
 if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" &>/dev/null; then
@@ -143,17 +134,19 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" &
         --zip-file fileb://lambda_deployment.zip \
         --region "$REGION"
 
+    # Wait for update to complete before updating configuration
+    echo "⏳ Waiting for code update..."
+    aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
+
     aws lambda update-function-configuration \
         --function-name "$FUNCTION_NAME" \
         --timeout 30 \
         --memory-size 512 \
+        --layers "$SKLEARN_LAYER_ARN" \
         --environment "Variables={S3_BUCKET_NAME=${BUCKET_NAME}}" \
         --region "$REGION"
 else
     echo "✨ Creating new function..."
-    # Use AWS Data Science Lambda Layer (includes scikit-learn, pandas, numpy)
-    LAYER_ARN="arn:aws:lambda:${REGION}:336392948345:layer:AWSSDKPandas-Python312:17"
-
     aws lambda create-function \
         --function-name "$FUNCTION_NAME" \
         --runtime "$RUNTIME" \
@@ -162,7 +155,7 @@ else
         --zip-file fileb://lambda_deployment.zip \
         --timeout 30 \
         --memory-size 512 \
-        --layers "$LAYER_ARN" \
+        --layers "$SKLEARN_LAYER_ARN" \
         --environment "Variables={S3_BUCKET_NAME=${BUCKET_NAME}}" \
         --region "$REGION"
 fi
