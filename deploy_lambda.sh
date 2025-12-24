@@ -34,27 +34,38 @@ cp ../lambda_handler.py .
 mkdir -p src
 cp ../src/s3_utils.py src/ 2>/dev/null || touch src/__init__.py
 
-# Install ONLY scikit-learn (ultra-minimal)
-echo "📦 Installing scikit-learn (optimized)..."
+# Install scikit-learn with minimal dependencies
+echo "📦 Installing scikit-learn + essential dependencies..."
 pip install --target . \
     scikit-learn \
+    pandas \
+    numpy \
     --platform manylinux2014_x86_64 \
     --implementation cp \
     --python-version 3.12 \
     --only-binary=:all: \
-    --no-deps \
+    --upgrade \
     -q
 
-# Remove ALL unnecessary files to stay under 50MB
+# Remove ALL unnecessary files to stay under 250MB (Lambda unzipped limit)
 echo "🧹 Aggressive cleanup..."
 find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
 find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
 find . -name "*.pyc" -delete
 find . -name "*.pyo" -delete
-find . -name "*.so.1" -delete 2>/dev/null || true
-rm -rf ./sklearn/datasets/tests 2>/dev/null || true
-rm -rf ./sklearn/datasets/data 2>/dev/null || true
+find . -name "*.pyx" -delete
+find . -name "*.c" -delete
+find . -name "*.h" -delete
+rm -rf ./sklearn/datasets 2>/dev/null || true
+rm -rf ./pandas/tests 2>/dev/null || true
+rm -rf ./numpy/tests 2>/dev/null || true
+rm -rf ./scipy/tests 2>/dev/null || true
 rm -rf ./joblib/test 2>/dev/null || true
+rm -rf ./*.dist-info 2>/dev/null || true
+
+# Check package size
+PACKAGE_SIZE=$(du -sh . | cut -f1)
+echo "📏 Package size: $PACKAGE_SIZE"
 
 # Create zip file (exclude unnecessary files)
 echo "🗜️  Creating deployment zip..."
