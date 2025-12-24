@@ -86,7 +86,7 @@ jobs:
 
     - name: Check model imports
       run: |
-        python -c "from model.model_dev import LinearRegressionModel; print('✓ Models import successfully')"
+        python -c "from src.model_dev import LinearRegressionModel, RandomForestModel; print('✓ Models import successfully')"
 
   security-scan:
     name: Security Scan

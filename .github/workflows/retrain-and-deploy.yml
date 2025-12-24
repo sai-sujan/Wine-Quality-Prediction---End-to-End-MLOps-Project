@@ -6,13 +6,13 @@ on:
       model_name:
         description: 'Model to train'
         required: true
-        default: 'LinearRegressionModel'
+        default: 'randomforest'
         type: choice
         options:
-          - LinearRegressionModel
+          - randomforest
           - lightgbm
           - xgboost
-          - randomforest
+          - LinearRegressionModel
       deploy_threshold:
         description: 'Maximum MSE to deploy'
         required: false
@@ -52,9 +52,9 @@ jobs:
 
     - name: Train model
       env:
-        MODEL_NAME: ${{ github.event.inputs.model_name || 'LinearRegressionModel' }}
+        MODEL_NAME: ${{ github.event.inputs.model_name || 'randomforest' }}
       run: |
-        python run_pipeline.py
+        python run_local.py
 
     - name: Evaluate model
       id: evaluate
@@ -98,39 +98,27 @@ jobs:
         name: trained-model-${{ github.run_number }}
         path: ./mlruns
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+        aws-region: us-east-2
 
-    - name: Setup AWS SAM
-      uses: aws-actions/setup-sam@v2
-
-    - name: Deploy to AWS
+    - name: Deploy to AWS Lambda
       run: |
-        sam build --template-file template.yaml
-        sam deploy \
-          --stack-name customer-satisfaction-mlops \
-          --capabilities CAPABILITY_IAM \
-          --region ${{ secrets.AWS_REGION || 'us-east-1' }} \
-          --no-confirm-changeset \
-          --resolve-s3
-
-    - name: Upload model to S3
-      run: |
-        MODEL_BUCKET=$(aws cloudformation describe-stacks \
-          --stack-name customer-satisfaction-mlops \
-          --region ${{ secrets.AWS_REGION || 'us-east-1' }} \
-          --query 'Stacks[0].Outputs[?OutputKey==`ModelBucketName`].OutputValue' \
-          --output text)
-
-        # Find latest model
-        LATEST_MODEL=$(find mlruns -name "model" -type d | sort -r | head -1)
-
-        # Upload to S3
-        aws s3 cp "$LATEST_MODEL" "s3://$MODEL_BUCKET/models/production/model/" --recursive
+        chmod +x deploy_all.sh
+        ./deploy_all.sh
 
     - name: Create release
       uses: actions/create-release@v1
@@ -146,7 +134,7 @@ jobs:
           - MSE: ${{ needs.train.outputs.mse }}
           - Threshold: ${{ github.event.inputs.deploy_threshold || '5.0' }}
 
-          **Model:** ${{ github.event.inputs.model_name || 'LinearRegressionModel' }}
+          **Model:** ${{ github.event.inputs.model_name || 'randomforest' }}
           **Deployed:** ✅
         draft: false
         prerelease: false
