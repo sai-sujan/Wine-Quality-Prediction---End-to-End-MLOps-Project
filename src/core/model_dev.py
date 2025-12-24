@@ -180,12 +180,12 @@ class HyperparameterTuner:
         except Exception as e:
             logging.warning(f"Could not save parameters: {e}")
 
-    def optimize(self, n_trials=100, use_cached=True):
+    def optimize(self, n_trials=10, use_cached=True):
         """
         Optimize hyperparameters using Optuna.
 
         Args:
-            n_trials: Number of optimization trials
+            n_trials: Number of optimization trials (default: 10 for faster training)
             use_cached: If True, use previously saved best parameters if available
 
         Returns:
