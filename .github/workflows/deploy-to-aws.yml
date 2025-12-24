@@ -1,6 +1,16 @@
 name: Deploy to AWS
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda_handler.py'
+      - 'src/s3_utils.py'
+      - 'deploy_lambda.sh'
+      - 'deploy_all.sh'
+      - 'setup_s3.sh'
+      - '.github/workflows/deploy-to-aws.yml'
   workflow_dispatch:
     inputs:
       deploy_lambda:
@@ -41,13 +51,13 @@ jobs:
         ./setup_s3.sh
 
     - name: Install dependencies
-      if: ${{ github.event.inputs.upload_model == 'true' }}
+      if: ${{ github.event.inputs.upload_model == 'true' || github.event_name == 'push' }}
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
     - name: Train and upload model to S3
-      if: ${{ github.event.inputs.upload_model == 'true' }}
+      if: ${{ github.event.inputs.upload_model == 'true' || github.event_name == 'push' }}
       env:
         SAVE_TO_S3: 'true'
         AWS_BUCKET_NAME: 'wine-quality-mlops-sujan'
@@ -58,7 +68,7 @@ jobs:
         python run_aws.py
 
     - name: Deploy Lambda function
-      if: ${{ github.event.inputs.deploy_lambda == 'true' }}
+      if: ${{ github.event.inputs.deploy_lambda == 'true' || github.event_name == 'push' }}
       run: |
         chmod +x deploy_lambda.sh
         ./deploy_lambda.sh
