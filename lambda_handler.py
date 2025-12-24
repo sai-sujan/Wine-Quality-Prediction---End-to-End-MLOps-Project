@@ -15,7 +15,7 @@ s3_client = None
 # Configuration
 BUCKET_NAME = os.getenv('S3_BUCKET_NAME', 'wine-quality-mlops-sujan')
 MODEL_KEY = 'models/model.pkl'
-REGION = os.getenv('AWS_REGION', 'us-east-2')
+REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-2')  # Lambda provides AWS_DEFAULT_REGION
 
 
 def load_model_from_s3():
