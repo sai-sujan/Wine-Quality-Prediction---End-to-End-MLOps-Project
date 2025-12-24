@@ -10,16 +10,27 @@ AttributeError: 'NoneType' object has no attribute 'name'
 ```
 
 **Root Cause:**
-In `steps/model_train.py`, the code was trying to access `.name` on the experiment tracker when it might be `None` (when MLflow isn't configured in GitHub Actions).
+In `steps/model_train.py` and `steps/evaluation.py`, the code was trying to access `.name` on the experiment tracker when it might be `None` (when MLflow isn't configured in GitHub Actions).
 
 **Fix:**
-Changed line 21 in [steps/model_train.py](steps/model_train.py):
+Changed in both files:
+
+**steps/model_train.py (line 21):**
 ```python
 # Before
 @step(experiment_tracker=experiment_tracker.name)
 
 # After
 @step(experiment_tracker=experiment_tracker.name if experiment_tracker else None)
+```
+
+**steps/evaluation.py (line 12):**
+```python
+# Before
+@step(experiment_tracker = experiment_tracker.name)
+
+# After
+@step(experiment_tracker = experiment_tracker.name if experiment_tracker else None)
 ```
 
 This safely handles the case when no experiment tracker is configured.
