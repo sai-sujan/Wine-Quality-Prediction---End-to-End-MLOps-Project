@@ -10,6 +10,7 @@ on:
       - 'deploy_lambda.sh'
       - 'deploy_all.sh'
       - 'setup_s3.sh'
+      - 'run_aws.py'
       - '.github/workflows/deploy-to-aws.yml'
   workflow_dispatch:
     inputs:
