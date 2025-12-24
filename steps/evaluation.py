@@ -9,7 +9,7 @@ from typing_extensions import Annotated
 import mlflow
 
 experiment_tracker = Client().active_stack.experiment_tracker
-@step(experiment_tracker = experiment_tracker.name)
+@step(experiment_tracker = experiment_tracker.name if experiment_tracker else None)
 def evaluate_model(model:RegressorMixin,
                    X_test:pd.DataFrame,
                    y_test:pd.DataFrame) -> Tuple[Annotated[float,"r2score"],Annotated[float,"rmse"]] :
