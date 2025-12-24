@@ -86,7 +86,7 @@ with col2:
     else:
         st.error(f"❌ API is not reachable at: {FASTAPI_URL}")
         if api_mode == "Local Development":
-            st.info("💡 Start local API: ./run_api.sh or python api.py")
+            st.info("💡 Start local API: python src/api/main.py")
         else:
             st.info("💡 Check your AWS Lambda URL and ensure it's deployed")
         st.stop()

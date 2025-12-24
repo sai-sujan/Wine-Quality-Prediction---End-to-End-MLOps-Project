@@ -20,7 +20,7 @@ fi
 if [ ! -d "$HOME/Library/Application Support/zenml" ]; then
     echo "⚠️  Warning: No trained model found"
     echo "💡 Train a model first:"
-    echo "   python run_pipeline.py"
+    echo "   python scripts/run_local.py"
     echo ""
     read -p "Continue anyway? (y/n) " -n 1 -r
     echo
@@ -39,4 +39,4 @@ echo "Press Ctrl+C to stop the server"
 echo ""
 
 # Run the API
-python api.py
+python src/api/main.py

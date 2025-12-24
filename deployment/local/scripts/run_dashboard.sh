@@ -24,7 +24,7 @@ if curl -s http://localhost:8000/health > /dev/null 2>&1; then
 else
     echo "⚠️  Warning: FastAPI is not running"
     echo "💡 Start the API first for predictions to work:"
-    echo "   ./run_api.sh"
+    echo "   python src/api/main.py"
     echo ""
     read -p "Continue anyway? (y/n) " -n 1 -r
     echo
@@ -61,4 +61,4 @@ echo "Press Ctrl+C to stop the dashboard"
 echo ""
 
 # Run the Streamlit app
-streamlit run streamlit_dashboard.py
+streamlit run src/dashboard/streamlit_app.py

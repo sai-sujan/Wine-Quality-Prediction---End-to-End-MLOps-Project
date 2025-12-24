@@ -4,7 +4,9 @@
       "Bash(source zenml_env/bin/activate)",
       "Bash(mlflow ui:*)",
       "Bash(ls:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }
