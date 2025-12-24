@@ -14,8 +14,8 @@ import uvicorn
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Customer Satisfaction Prediction API",
-    description="MLOps project for predicting customer satisfaction scores",
+    title="Wine Quality Prediction API",
+    description="MLOps project for predicting wine quality scores based on physicochemical properties",
     version="1.0.0"
 )
 
@@ -32,44 +32,45 @@ app.add_middleware(
 model = None
 
 
-# Request schema
+# Request schema for Wine Quality Prediction
 class PredictionRequest(BaseModel):
-    payment_sequential: int = Field(..., ge=1, description="Payment sequence number")
-    payment_installments: int = Field(..., ge=1, description="Number of installments")
-    payment_value: float = Field(..., gt=0, description="Total payment value")
-    price: float = Field(..., gt=0, description="Product price")
-    freight_value: float = Field(..., ge=0, description="Freight/shipping cost")
-    product_name_lenght: int = Field(..., ge=0, description="Product name length")
-    product_description_lenght: int = Field(..., ge=0, description="Product description length")
-    product_photos_qty: int = Field(..., ge=0, description="Number of product photos")
-    product_weight_g: float = Field(..., gt=0, description="Product weight in grams")
-    product_length_cm: float = Field(..., gt=0, description="Product length in cm")
-    product_height_cm: float = Field(..., gt=0, description="Product height in cm")
-    product_width_cm: float = Field(..., gt=0, description="Product width in cm")
+    fixed_acidity: float = Field(..., ge=0, description="Fixed acidity (tartaric acid - g/dm³)")
+    volatile_acidity: float = Field(..., ge=0, description="Volatile acidity (acetic acid - g/dm³)")
+    citric_acid: float = Field(..., ge=0, description="Citric acid (g/dm³)")
+    residual_sugar: float = Field(..., ge=0, description="Residual sugar (g/dm³)")
+    chlorides: float = Field(..., ge=0, description="Chlorides (sodium chloride - g/dm³)")
+    free_sulfur_dioxide: float = Field(..., ge=0, description="Free sulfur dioxide (mg/dm³)")
+    total_sulfur_dioxide: float = Field(..., ge=0, description="Total sulfur dioxide (mg/dm³)")
+    density: float = Field(..., gt=0, description="Density (g/cm³)")
+    pH: float = Field(..., ge=0, le=14, description="pH level")
+    sulphates: float = Field(..., ge=0, description="Sulphates (potassium sulphate - g/dm³)")
+    alcohol: float = Field(..., ge=0, description="Alcohol content (% by volume)")
+    wine_type_encoded: Optional[int] = Field(0, ge=0, le=1, description="Wine type (0=red, 1=white)")
 
     class Config:
         schema_extra = {
             "example": {
-                "payment_sequential": 1,
-                "payment_installments": 3,
-                "payment_value": 142.90,
-                "price": 129.99,
-                "freight_value": 12.91,
-                "product_name_lenght": 58,
-                "product_description_lenght": 598,
-                "product_photos_qty": 4,
-                "product_weight_g": 700,
-                "product_length_cm": 18,
-                "product_height_cm": 9,
-                "product_width_cm": 15
+                "fixed_acidity": 7.4,
+                "volatile_acidity": 0.70,
+                "citric_acid": 0.0,
+                "residual_sugar": 1.9,
+                "chlorides": 0.076,
+                "free_sulfur_dioxide": 11.0,
+                "total_sulfur_dioxide": 34.0,
+                "density": 0.9978,
+                "pH": 3.51,
+                "sulphates": 0.56,
+                "alcohol": 9.4,
+                "wine_type_encoded": 0
             }
         }
 
 
 # Response schema
 class PredictionResponse(BaseModel):
-    prediction: float = Field(..., description="Predicted customer satisfaction score")
-    customer_satisfaction_score: float = Field(..., description="Customer satisfaction (0-5)")
+    prediction: float = Field(..., description="Predicted wine quality score")
+    wine_quality_score: float = Field(..., description="Wine quality (0-10)")
+    quality_rating: str = Field(..., description="Quality rating (Poor/Average/Good/Excellent)")
     model_version: str = Field(default="v1.0", description="Model version")
     message: str = Field(default="Prediction successful")
 
@@ -89,15 +90,25 @@ def load_model():
         return model
 
     try:
-        # Option 1: Try to load from models/ directory (simple training)
+        # Option 1: Try to load from root directory (saved by pipeline)
+        root_model_path = "model.pkl"
+        if os.path.exists(root_model_path):
+            import pickle
+            with open(root_model_path, 'rb') as f:
+                model = pickle.load(f)
+            print(f"✅ Model loaded from: {root_model_path}")
+            return model
+
+        # Option 2: Try to load from models/ directory
         simple_model_path = "models/model.pkl"
         if os.path.exists(simple_model_path):
-            import joblib
-            model = joblib.load(simple_model_path)
+            import pickle
+            with open(simple_model_path, 'rb') as f:
+                model = pickle.load(f)
             print(f"✅ Model loaded from: {simple_model_path}")
             return model
 
-        # Option 2: Try to load from MLflow
+        # Option 3: Try to load from MLflow
         mlflow_dir = os.path.expanduser(
             "~/Library/Application Support/zenml/local_stores/*/mlruns"
         )
@@ -142,11 +153,13 @@ async def startup_event():
 async def root():
     """Root endpoint with API information"""
     return {
-        "message": "Customer Satisfaction Prediction API",
+        "message": "Wine Quality Prediction API",
+        "description": "Predict wine quality scores (0-10) from physicochemical properties",
         "version": "1.0.0",
         "endpoints": {
             "health": "/health",
             "predict": "/predict",
+            "model_info": "/model/info",
             "docs": "/docs",
             "redoc": "/redoc"
         }
@@ -160,7 +173,7 @@ async def health_check():
 
     return {
         "status": "healthy" if model_loaded else "degraded",
-        "service": "customer-satisfaction-predictor",
+        "service": "wine-quality-predictor",
         "version": "v1.0",
         "model_loaded": model_loaded
     }
@@ -169,41 +182,52 @@ async def health_check():
 @app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
 async def predict(request: PredictionRequest):
     """
-    Make a prediction for customer satisfaction
+    Make a prediction for wine quality
 
-    Returns a score between 0-5 indicating predicted customer satisfaction
+    Returns a score between 0-10 indicating predicted wine quality
     """
     try:
         # Load model if not already loaded
         if model is None:
             load_model()
 
-        # Prepare features
+        # Prepare features in the correct order
         features = pd.DataFrame([{
-            'payment_sequential': request.payment_sequential,
-            'payment_installments': request.payment_installments,
-            'payment_value': request.payment_value,
-            'price': request.price,
-            'freight_value': request.freight_value,
-            'product_name_lenght': request.product_name_lenght,
-            'product_description_lenght': request.product_description_lenght,
-            'product_photos_qty': request.product_photos_qty,
-            'product_weight_g': request.product_weight_g,
-            'product_length_cm': request.product_length_cm,
-            'product_height_cm': request.product_height_cm,
-            'product_width_cm': request.product_width_cm
+            'fixed acidity': request.fixed_acidity,
+            'volatile acidity': request.volatile_acidity,
+            'citric acid': request.citric_acid,
+            'residual sugar': request.residual_sugar,
+            'chlorides': request.chlorides,
+            'free sulfur dioxide': request.free_sulfur_dioxide,
+            'total sulfur dioxide': request.total_sulfur_dioxide,
+            'density': request.density,
+            'pH': request.pH,
+            'sulphates': request.sulphates,
+            'alcohol': request.alcohol,
+            'wine_type_encoded': request.wine_type_encoded
         }])
 
         # Make prediction
         prediction = model.predict(features)
         score = float(prediction[0])
 
-        # Clip to valid range (0-5)
-        score = max(0, min(5, score))
+        # Clip to valid range (0-10)
+        score = max(0, min(10, score))
+
+        # Determine quality rating
+        if score < 5:
+            quality_rating = "Poor"
+        elif score < 6:
+            quality_rating = "Average"
+        elif score < 7:
+            quality_rating = "Good"
+        else:
+            quality_rating = "Excellent"
 
         return {
             "prediction": score,
-            "customer_satisfaction_score": score,
+            "wine_quality_score": score,
+            "quality_rating": quality_rating,
             "model_version": "v1.0",
             "message": "Prediction successful"
         }
@@ -231,19 +255,21 @@ async def model_info():
 
     return {
         "model_type": type(model).__name__,
+        "problem_type": "Wine Quality Prediction (Regression)",
+        "target": "quality (0-10 score)",
         "features": [
-            "payment_sequential",
-            "payment_installments",
-            "payment_value",
-            "price",
-            "freight_value",
-            "product_name_lenght",
-            "product_description_lenght",
-            "product_photos_qty",
-            "product_weight_g",
-            "product_length_cm",
-            "product_height_cm",
-            "product_width_cm"
+            "fixed acidity",
+            "volatile acidity",
+            "citric acid",
+            "residual sugar",
+            "chlorides",
+            "free sulfur dioxide",
+            "total sulfur dioxide",
+            "density",
+            "pH",
+            "sulphates",
+            "alcohol",
+            "wine_type_encoded"
         ],
         "version": "v1.0"
     }
@@ -251,9 +277,10 @@ async def model_info():
 
 if __name__ == "__main__":
     # Run the API server
-    print("🚀 Starting Customer Satisfaction Prediction API...")
+    print("🚀 Starting Wine Quality Prediction API...")
     print("📖 API Documentation: http://localhost:8000/docs")
     print("🔧 Alternative docs: http://localhost:8000/redoc")
+    print("🍷 Predict wine quality from physicochemical properties")
 
     uvicorn.run(
         "api:app",

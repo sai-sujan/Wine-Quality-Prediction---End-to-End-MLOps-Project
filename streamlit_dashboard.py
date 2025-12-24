@@ -1,19 +1,48 @@
 """
-Simple Streamlit Dashboard for Customer Satisfaction Predictions
+Simple Streamlit Dashboard for Wine Quality Predictions
 """
 import streamlit as st
 import requests
 import plotly.graph_objects as go
+import os
 
 # Page configuration
 st.set_page_config(
-    page_title="Customer Satisfaction Predictor",
-    page_icon="🎯",
+    page_title="Wine Quality Predictor",
+    page_icon="🍷",
     layout="wide"
 )
 
-# Constants
-FASTAPI_URL = "http://localhost:8000"
+# API Configuration - supports both local and AWS Lambda
+DEFAULT_LOCAL_URL = "http://localhost:8000"
+DEFAULT_AWS_URL = os.getenv("AWS_LAMBDA_URL", "")  # Set via environment variable
+
+# Sidebar for API endpoint selection
+with st.sidebar:
+    st.header("⚙️ Settings")
+    api_mode = st.radio(
+        "API Endpoint",
+        ["Local Development", "AWS Lambda"],
+        help="Choose between local API or deployed AWS Lambda"
+    )
+
+    if api_mode == "Local Development":
+        FASTAPI_URL = st.text_input(
+            "Local API URL",
+            value=DEFAULT_LOCAL_URL,
+            help="URL of your local FastAPI server"
+        )
+    else:
+        FASTAPI_URL = st.text_input(
+            "AWS Lambda URL",
+            value=DEFAULT_AWS_URL,
+            placeholder="https://your-lambda-id.execute-api.us-east-2.amazonaws.com/prod",
+            help="Your AWS Lambda API Gateway endpoint"
+        )
+
+    st.markdown("---")
+    st.markdown("**Current Endpoint:**")
+    st.code(FASTAPI_URL, language="text")
 
 # Custom CSS
 st.markdown("""
@@ -23,21 +52,21 @@ st.markdown("""
     }
     .stButton>button {
         width: 100%;
-        background-color: #FF4B4B;
+        background-color: #8B0000;
         color: white;
         font-weight: bold;
         padding: 0.75rem;
         border-radius: 0.5rem;
     }
     .stButton>button:hover {
-        background-color: #FF6B6B;
+        background-color: #A52A2A;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # Title
-st.title("🎯 Customer Satisfaction Predictor")
-st.markdown("Predict customer satisfaction scores based on order details")
+st.title("🍷 Wine Quality Predictor")
+st.markdown("Predict wine quality scores (0-10) based on physicochemical properties")
 st.markdown("---")
 
 # Check API status
@@ -53,66 +82,155 @@ def check_api_status():
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     if check_api_status():
-        st.success("✅ Prediction API is running")
+        st.success(f"✅ API is running ({api_mode})")
     else:
-        st.error("❌ Prediction API is not running. Please start it with: ./run_api.sh")
+        st.error(f"❌ API is not reachable at: {FASTAPI_URL}")
+        if api_mode == "Local Development":
+            st.info("💡 Start local API: ./run_api.sh or python api.py")
+        else:
+            st.info("💡 Check your AWS Lambda URL and ensure it's deployed")
         st.stop()
 
 st.markdown("---")
+
+# Wine type selector
+wine_type = st.radio("🍷 Select Wine Type", ["Red Wine", "White Wine"], horizontal=True)
+wine_type_encoded = 0 if wine_type == "Red Wine" else 1
 
 # Create two columns for input
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("💳 Payment Information")
-    payment_sequential = st.number_input("Payment Sequential", min_value=1, value=1, step=1)
-    payment_installments = st.number_input("Payment Installments", min_value=1, value=3, step=1)
-    payment_value = st.number_input("Payment Value ($)", min_value=0.01, value=142.90, step=0.01)
-    price = st.number_input("Price ($)", min_value=0.01, value=129.99, step=0.01)
-    freight_value = st.number_input("Freight Value ($)", min_value=0.0, value=12.91, step=0.01)
+    st.subheader("🧪 Acidity & Chemical Properties")
+    fixed_acidity = st.number_input(
+        "Fixed Acidity (g/dm³)",
+        min_value=0.0,
+        max_value=20.0,
+        value=7.4,
+        step=0.1,
+        help="Tartaric acid concentration"
+    )
+    volatile_acidity = st.number_input(
+        "Volatile Acidity (g/dm³)",
+        min_value=0.0,
+        max_value=2.0,
+        value=0.70,
+        step=0.01,
+        help="Acetic acid concentration"
+    )
+    citric_acid = st.number_input(
+        "Citric Acid (g/dm³)",
+        min_value=0.0,
+        max_value=2.0,
+        value=0.0,
+        step=0.01,
+        help="Adds freshness and flavor"
+    )
+    pH = st.number_input(
+        "pH Level",
+        min_value=2.0,
+        max_value=5.0,
+        value=3.51,
+        step=0.01,
+        help="Acidity level (lower = more acidic)"
+    )
+
+    st.subheader("🧂 Sugar & Minerals")
+    residual_sugar = st.number_input(
+        "Residual Sugar (g/dm³)",
+        min_value=0.0,
+        max_value=20.0,
+        value=1.9,
+        step=0.1,
+        help="Sugar remaining after fermentation"
+    )
+    chlorides = st.number_input(
+        "Chlorides (g/dm³)",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.076,
+        step=0.001,
+        help="Salt content"
+    )
+    sulphates = st.number_input(
+        "Sulphates (g/dm³)",
+        min_value=0.0,
+        max_value=2.0,
+        value=0.56,
+        step=0.01,
+        help="Wine additive (antimicrobial & antioxidant)"
+    )
 
 with col2:
-    st.subheader("📦 Product Information")
-    product_name_lenght = st.number_input("Product Name Length", min_value=1, value=58, step=1)
-    product_description_lenght = st.number_input("Product Description Length", min_value=1, value=598, step=1)
-    product_photos_qty = st.number_input("Product Photos Quantity", min_value=0, value=4, step=1)
-    product_weight_g = st.number_input("Product Weight (g)", min_value=1, value=700, step=1)
-    product_length_cm = st.number_input("Product Length (cm)", min_value=1, value=18, step=1)
-    product_height_cm = st.number_input("Product Height (cm)", min_value=1, value=9, step=1)
-    product_width_cm = st.number_input("Product Width (cm)", min_value=1, value=15, step=1)
+    st.subheader("💨 Sulfur Dioxide & Density")
+    free_sulfur_dioxide = st.number_input(
+        "Free Sulfur Dioxide (mg/dm³)",
+        min_value=0.0,
+        max_value=100.0,
+        value=11.0,
+        step=1.0,
+        help="Free form of SO₂"
+    )
+    total_sulfur_dioxide = st.number_input(
+        "Total Sulfur Dioxide (mg/dm³)",
+        min_value=0.0,
+        max_value=300.0,
+        value=34.0,
+        step=1.0,
+        help="Total SO₂ (free + bound forms)"
+    )
+    density = st.number_input(
+        "Density (g/cm³)",
+        min_value=0.9,
+        max_value=1.1,
+        value=0.9978,
+        step=0.0001,
+        help="Wine density"
+    )
+
+    st.subheader("🍇 Alcohol Content")
+    alcohol = st.number_input(
+        "Alcohol (% vol)",
+        min_value=8.0,
+        max_value=15.0,
+        value=9.4,
+        step=0.1,
+        help="Alcohol percentage by volume"
+    )
 
 st.markdown("---")
 
 # Predict button
 col1, col2, col3 = st.columns([1, 1, 1])
 with col2:
-    predict_button = st.button("🔮 Predict Customer Satisfaction", use_container_width=True)
+    predict_button = st.button("🔮 Predict Wine Quality", use_container_width=True)
 
 if predict_button:
     # Prepare data
     data = {
-        "payment_sequential": int(payment_sequential),
-        "payment_installments": int(payment_installments),
-        "payment_value": float(payment_value),
-        "price": float(price),
-        "freight_value": float(freight_value),
-        "product_name_lenght": int(product_name_lenght),
-        "product_description_lenght": int(product_description_lenght),
-        "product_photos_qty": int(product_photos_qty),
-        "product_weight_g": int(product_weight_g),
-        "product_length_cm": int(product_length_cm),
-        "product_height_cm": int(product_height_cm),
-        "product_width_cm": int(product_width_cm)
+        "fixed_acidity": float(fixed_acidity),
+        "volatile_acidity": float(volatile_acidity),
+        "citric_acid": float(citric_acid),
+        "residual_sugar": float(residual_sugar),
+        "chlorides": float(chlorides),
+        "free_sulfur_dioxide": float(free_sulfur_dioxide),
+        "total_sulfur_dioxide": float(total_sulfur_dioxide),
+        "density": float(density),
+        "pH": float(pH),
+        "sulphates": float(sulphates),
+        "alcohol": float(alcohol),
+        "wine_type_encoded": int(wine_type_encoded)
     }
 
     # Make prediction
-    with st.spinner("Making prediction..."):
+    with st.spinner("Analyzing wine properties..."):
         try:
             response = requests.post(f"{FASTAPI_URL}/predict", json=data)
 
             if response.status_code == 200:
                 result = response.json()
-                score = result.get("customer_satisfaction_score", result.get("prediction", 0))
+                score = result.get("wine_quality_score", result.get("prediction", 0))
+                quality_rating = result.get("quality_rating", "Unknown")
 
                 st.markdown("---")
                 st.subheader("📊 Prediction Results")
@@ -122,23 +240,24 @@ if predict_button:
                     mode="gauge+number+delta",
                     value=score,
                     domain={'x': [0, 1], 'y': [0, 1]},
-                    title={'text': "Customer Satisfaction Score", 'font': {'size': 24}},
-                    delta={'reference': 3.5, 'increasing': {'color': "green"}},
+                    title={'text': "Wine Quality Score", 'font': {'size': 24}},
+                    delta={'reference': 6.0, 'increasing': {'color': "green"}},
                     gauge={
-                        'axis': {'range': [None, 5], 'tickwidth': 1, 'tickcolor': "darkblue"},
-                        'bar': {'color': "darkblue"},
+                        'axis': {'range': [0, 10], 'tickwidth': 1, 'tickcolor': "darkred"},
+                        'bar': {'color': "#8B0000"},
                         'bgcolor': "white",
                         'borderwidth': 2,
                         'bordercolor': "gray",
                         'steps': [
-                            {'range': [0, 2.5], 'color': '#ffcccc'},
-                            {'range': [2.5, 4], 'color': '#ffffcc'},
-                            {'range': [4, 5], 'color': '#ccffcc'}
+                            {'range': [0, 5], 'color': '#ffcccc'},
+                            {'range': [5, 6], 'color': '#ffffcc'},
+                            {'range': [6, 7], 'color': '#ccffcc'},
+                            {'range': [7, 10], 'color': '#90EE90'}
                         ],
                         'threshold': {
-                            'line': {'color': "red", 'width': 4},
+                            'line': {'color': "green", 'width': 4},
                             'thickness': 0.75,
-                            'value': 4.0
+                            'value': 7.0
                         }
                     }
                 ))
@@ -155,15 +274,28 @@ if predict_button:
                 col1, col2, col3 = st.columns(3)
 
                 with col2:
-                    if score >= 4.0:
-                        st.success(f"😊 **High Satisfaction** - Score: {score:.2f}/5.0")
-                        st.info("The customer is likely to be very satisfied with this order!")
-                    elif score >= 2.5:
-                        st.warning(f"😐 **Medium Satisfaction** - Score: {score:.2f}/5.0")
-                        st.info("The customer satisfaction is average. Consider improvements.")
+                    if quality_rating == "Excellent":
+                        st.success(f"🌟 **{quality_rating}** - Score: {score:.2f}/10")
+                        st.info("This is a premium quality wine!")
+                    elif quality_rating == "Good":
+                        st.success(f"✅ **{quality_rating}** - Score: {score:.2f}/10")
+                        st.info("This is a good quality wine.")
+                    elif quality_rating == "Average":
+                        st.warning(f"😐 **{quality_rating}** - Score: {score:.2f}/10")
+                        st.info("This is an average quality wine.")
                     else:
-                        st.error(f"😞 **Low Satisfaction** - Score: {score:.2f}/5.0")
-                        st.info("The customer may not be satisfied. Review order details.")
+                        st.error(f"❌ **{quality_rating}** - Score: {score:.2f}/10")
+                        st.info("This wine may need improvement.")
+
+                # Show detailed results
+                st.markdown("### 📋 Detailed Information")
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Quality Score", f"{score:.2f}/10")
+                with col2:
+                    st.metric("Quality Rating", quality_rating)
+                with col3:
+                    st.metric("Wine Type", wine_type)
 
             else:
                 st.error(f"Error: {response.status_code} - {response.text}")
@@ -176,7 +308,8 @@ if predict_button:
 st.markdown("---")
 st.markdown("""
     <div style='text-align: center; color: gray;'>
-        <p>Customer Satisfaction Prediction System</p>
+        <p>Wine Quality Prediction System</p>
         <p>Powered by MLOps Pipeline (ZenML + MLflow + FastAPI)</p>
+        <p>Dataset: UCI Wine Quality Dataset</p>
     </div>
 """, unsafe_allow_html=True)

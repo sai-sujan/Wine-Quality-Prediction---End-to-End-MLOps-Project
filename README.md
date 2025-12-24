@@ -1,6 +1,6 @@
-# 🚀 Customer Satisfaction Prediction - End-to-End MLOps Project
+# 🍷 Wine Quality Prediction - End-to-End MLOps Project
 
-A production-ready MLOps pipeline for predicting customer satisfaction scores using ZenML, MLflow, and AWS Lambda.
+A production-ready MLOps pipeline for predicting wine quality scores using ZenML, MLflow, and AWS Lambda.
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
 [![MLflow](https://img.shields.io/badge/MLflow-2.18.0-blue.svg)](https://mlflow.org/)
@@ -10,6 +10,7 @@ A production-ready MLOps pipeline for predicting customer satisfaction scores us
 ## 📋 Table of Contents
 
 - [Overview](#overview)
+- [Dataset](#dataset)
 - [Architecture](#architecture)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
@@ -21,13 +22,39 @@ A production-ready MLOps pipeline for predicting customer satisfaction scores us
 
 ## 🎯 Overview
 
-This project implements a complete MLOps pipeline for predicting customer satisfaction based on order details. It demonstrates:
+This project implements a complete MLOps pipeline for predicting wine quality scores (0-10) based on physicochemical properties. It demonstrates:
 
 - **Automated ML Pipeline**: Data ingestion → Cleaning → Training → Evaluation → Deployment
+- **URL-Based Data Ingestion**: Fetches data directly from UCI repository
 - **Experiment Tracking**: MLflow for tracking experiments and model registry
 - **Pipeline Orchestration**: ZenML for managing ML workflows
 - **Serverless Deployment**: AWS Lambda for cost-effective, scalable inference
 - **Continuous Deployment**: Automated model deployment based on performance metrics
+
+## 📊 Dataset
+
+**Source**: [UCI Wine Quality Dataset](https://archive.ics.uci.edu/ml/datasets/wine+quality)
+
+### Features (11 physicochemical properties):
+- **Fixed Acidity**: Tartaric acid concentration (g/dm³)
+- **Volatile Acidity**: Acetic acid concentration (g/dm³)
+- **Citric Acid**: Adds freshness and flavor (g/dm³)
+- **Residual Sugar**: Sugar remaining after fermentation (g/dm³)
+- **Chlorides**: Salt content (g/dm³)
+- **Free Sulfur Dioxide**: Free form of SO₂ (mg/dm³)
+- **Total Sulfur Dioxide**: Total SO₂ content (mg/dm³)
+- **Density**: Wine density (g/cm³)
+- **pH**: Acidity level (0-14 scale)
+- **Sulphates**: Potassium sulphate - antimicrobial & antioxidant (g/dm³)
+- **Alcohol**: Alcohol content (% by volume)
+
+### Target Variable:
+- **Quality**: Score between 0-10 (based on sensory data)
+
+### Dataset Variants:
+- **Red Wine**: 1,599 samples
+- **White Wine**: 4,898 samples
+- **Combined**: 6,497 samples (both types)
 
 ## 🏗️ Architecture
 
@@ -36,33 +63,36 @@ This project implements a complete MLOps pipeline for predicting customer satisf
 │                     MLOps Pipeline Architecture                  │
 └─────────────────────────────────────────────────────────────────┘
 
-Data Ingestion → Data Cleaning → Model Training → Evaluation
-                                        ↓
-                                  MLflow Tracking
-                                        ↓
-                            Deployment Decision (MSE < 5.0)
-                                        ↓
-                              ┌─────────┴─────────┐
-                              │                   │
-                        Local Serving      AWS Lambda + API Gateway
-                        (Development)         (Production)
-                              │                   │
-                         localhost:8000    Public HTTPS Endpoint
+URL Data Ingestion → Data Cleaning → Model Training → Evaluation
+   (UCI Dataset)                            ↓
+                                      MLflow Tracking
+                                            ↓
+                                Deployment Decision (MSE < 5.0)
+                                            ↓
+                              ┌─────────────┴─────────────┐
+                              │                           │
+                        Local Serving            AWS Lambda + API Gateway
+                        (Development)                 (Production)
+                              │                           │
+                         localhost:8000          Public HTTPS Endpoint
 ```
 
 ## ✨ Features
 
 ### ML Pipeline
-- ✅ **Data Ingestion**: Automated data loading from multiple sources
-- ✅ **Data Cleaning**: Handle missing values, outliers, feature engineering
-- ✅ **Model Training**: Linear Regression with configurable models (LightGBM, XGBoost, Random Forest)
+- ✅ **URL-Based Data Ingestion**: Fetch data directly from UCI repository
+- ✅ **Multi-Dataset Support**: Red, White, or Combined wine datasets
+- ✅ **Data Cleaning**: Handle missing values, duplicates, encoding
+- ✅ **Model Training**: RandomForest with hyperparameter tuning (Optuna)
+- ✅ **Multiple Models**: LinearRegression, LightGBM, XGBoost, RandomForest
 - ✅ **Evaluation**: MSE, RMSE, R2 metrics tracking
-- ✅ **Deployment Trigger**: Automated deployment based on performance threshold
+- ✅ **Stratified Splitting**: Ensures balanced quality distribution
 
 ### MLOps Features
 - ✅ **Experiment Tracking**: All experiments logged to MLflow
 - ✅ **Model Registry**: Version control for models
 - ✅ **Pipeline Orchestration**: ZenML manages workflow dependencies
+- ✅ **Hyperparameter Tuning**: Optuna integration for model optimization
 - ✅ **Continuous Deployment**: Auto-deploy models meeting criteria
 - ✅ **Model Serving**: REST API for predictions
 
@@ -71,12 +101,14 @@ Data Ingestion → Data Cleaning → Model Training → Evaluation
 - ✅ **API Gateway**: HTTPS endpoint with CORS support
 - ✅ **Health Checks**: Monitoring endpoint for service health
 - ✅ **Versioning**: Model version tracking in responses
+- ✅ **Interactive Dashboard**: Streamlit UI for wine quality predictions
 
 ## 🛠️ Tech Stack
 
 **ML & MLOps:**
 - Python 3.12
 - Scikit-learn, LightGBM, XGBoost
+- Optuna (Hyperparameter Optimization)
 - MLflow (Experiment Tracking & Model Registry)
 - ZenML (Pipeline Orchestration)
 - Pandas, NumPy
@@ -89,7 +121,7 @@ Data Ingestion → Data Cleaning → Model Training → Evaluation
 
 **UI & Visualization:**
 - Streamlit (Production Dashboard)
-- Plotly (Interactive Charts)
+- Plotly (Interactive Charts & Gauges)
 - Real-time Monitoring & Analytics
 
 **Deployment:**
@@ -198,10 +230,10 @@ https://<api-id>.execute-api.<region>.amazonaws.com/prod/predict
 ```
 fcc_mlops_project/
 ├── pipelines/
-│   ├── training_pipeline.py          # Training pipeline definition
+���   ├── training_pipeline.py          # Training pipeline definition
 │   └── deployment_pipeline.py        # Deployment pipeline definition
 ├── steps/
-│   ├── ingest_data.py                # Data ingestion step
+│   ├── ingest_data.py                # URL-based data ingestion
 │   ├── clean_data.py                 # Data cleaning step
 │   ├── model_train.py                # Model training step
 │   ├── evaluation.py                 # Model evaluation step
@@ -210,8 +242,6 @@ fcc_mlops_project/
 │   ├── data_cleaning.py              # Data cleaning logic
 │   ├── evaluation.py                 # Evaluation metrics
 │   └── model_dev.py                  # Model development code
-├── model/
-│   └── model_dev.py                  # Model implementations
 ├── api.py                            # FastAPI application (local dev)
 ├── lambda_function.py                # AWS Lambda handler (production)
 ├── streamlit_dashboard.py            # Streamlit production UI
@@ -226,16 +256,23 @@ fcc_mlops_project/
 └── requirements.txt                  # Python dependencies
 ```
 
-## 🎨 Streamlit Prediction Dashboard
+## 🎨 Streamlit Wine Quality Dashboard
 
-A simple, clean web interface for making customer satisfaction predictions!
+A beautiful, interactive web interface for making wine quality predictions!
 
 ### Features
 
-- **🔮 Interactive Predictions** - Make predictions with a beautiful form and gauge visualization
+- **🍷 Wine Type Selection** - Choose between Red or White wine
+- **🧪 Chemical Properties Input** - 11 physicochemical feature inputs with helpful tooltips
+- **🔮 Interactive Predictions** - Beautiful gauge visualization with quality ratings
 - **📊 Real-time API Status** - Automatic check if prediction service is running
-- **🎯 Simple & Focused** - Just predictions, no complexity
-- **💻 Professional UI** - Clean design with color-coded results
+- **💻 Professional UI** - Clean design with wine-themed colors
+
+### Quality Ratings
+- **Excellent** (7-10): Premium quality wine
+- **Good** (6-7): Good quality wine
+- **Average** (5-6): Average quality wine
+- **Poor** (0-5): Needs improvement
 
 ### Quick Start
 
@@ -250,8 +287,6 @@ A simple, clean web interface for making customer satisfaction predictions!
 http://localhost:8501
 ```
 
-**Guide:** See [STREAMLIT_SIMPLE_GUIDE.md](STREAMLIT_SIMPLE_GUIDE.md)
-
 ## 📡 API Documentation
 
 ### Prediction Endpoint
@@ -261,26 +296,27 @@ http://localhost:8501
 **Request Body:**
 ```json
 {
-  "payment_sequential": 1,
-  "payment_installments": 3,
-  "payment_value": 142.90,
-  "price": 129.99,
-  "freight_value": 12.91,
-  "product_name_lenght": 58,
-  "product_description_lenght": 598,
-  "product_photos_qty": 4,
-  "product_weight_g": 700,
-  "product_length_cm": 18,
-  "product_height_cm": 9,
-  "product_width_cm": 15
+  "fixed_acidity": 7.4,
+  "volatile_acidity": 0.70,
+  "citric_acid": 0.0,
+  "residual_sugar": 1.9,
+  "chlorides": 0.076,
+  "free_sulfur_dioxide": 11.0,
+  "total_sulfur_dioxide": 34.0,
+  "density": 0.9978,
+  "pH": 3.51,
+  "sulphates": 0.56,
+  "alcohol": 9.4,
+  "wine_type_encoded": 0
 }
 ```
 
 **Response:**
 ```json
 {
-  "prediction": 3.45,
-  "customer_satisfaction_score": 3.45,
+  "prediction": 5.8,
+  "wine_quality_score": 5.8,
+  "quality_rating": "Average",
   "model_version": "v1.0",
   "message": "Prediction successful"
 }
@@ -294,7 +330,36 @@ http://localhost:8501
 ```json
 {
   "status": "healthy",
-  "service": "customer-satisfaction-predictor",
+  "service": "wine-quality-predictor",
+  "version": "v1.0",
+  "model_loaded": true
+}
+```
+
+### Model Info Endpoint
+
+**URL:** `GET /model/info`
+
+**Response:**
+```json
+{
+  "model_type": "RandomForestRegressor",
+  "problem_type": "Wine Quality Prediction (Regression)",
+  "target": "quality (0-10 score)",
+  "features": [
+    "fixed acidity",
+    "volatile acidity",
+    "citric acid",
+    "residual sugar",
+    "chlorides",
+    "free sulfur dioxide",
+    "total sulfur dioxide",
+    "density",
+    "pH",
+    "sulphates",
+    "alcohol",
+    "wine_type_encoded"
+  ],
   "version": "v1.0"
 }
 ```
@@ -303,21 +368,21 @@ http://localhost:8501
 
 **cURL:**
 ```bash
-curl -X POST https://your-api-url/prod/predict \
+curl -X POST http://localhost:8000/predict \
   -H 'Content-Type: application/json' \
   -d '{
-    "payment_sequential": 1,
-    "payment_installments": 3,
-    "payment_value": 100.0,
-    "price": 80.0,
-    "freight_value": 10.0,
-    "product_name_lenght": 50,
-    "product_description_lenght": 200,
-    "product_photos_qty": 3,
-    "product_weight_g": 1000,
-    "product_length_cm": 20,
-    "product_height_cm": 10,
-    "product_width_cm": 15
+    "fixed_acidity": 7.4,
+    "volatile_acidity": 0.70,
+    "citric_acid": 0.0,
+    "residual_sugar": 1.9,
+    "chlorides": 0.076,
+    "free_sulfur_dioxide": 11.0,
+    "total_sulfur_dioxide": 34.0,
+    "density": 0.9978,
+    "pH": 3.51,
+    "sulphates": 0.56,
+    "alcohol": 9.4,
+    "wine_type_encoded": 0
   }'
 ```
 
@@ -325,54 +390,87 @@ curl -X POST https://your-api-url/prod/predict \
 ```python
 import requests
 
-url = "https://your-api-url/prod/predict"
+url = "http://localhost:8000/predict"
 data = {
-    "payment_sequential": 1,
-    "payment_installments": 3,
-    "payment_value": 142.90,
-    "price": 129.99,
-    "freight_value": 12.91,
-    "product_name_lenght": 58,
-    "product_description_lenght": 598,
-    "product_photos_qty": 4,
-    "product_weight_g": 700,
-    "product_length_cm": 18,
-    "product_height_cm": 9,
-    "product_width_cm": 15
+    "fixed_acidity": 7.4,
+    "volatile_acidity": 0.70,
+    "citric_acid": 0.0,
+    "residual_sugar": 1.9,
+    "chlorides": 0.076,
+    "free_sulfur_dioxide": 11.0,
+    "total_sulfur_dioxide": 34.0,
+    "density": 0.9978,
+    "pH": 3.51,
+    "sulphates": 0.56,
+    "alcohol": 9.4,
+    "wine_type_encoded": 0
 }
 
 response = requests.post(url, json=data)
-print(response.json())
+result = response.json()
+print(f"Wine Quality: {result['wine_quality_score']:.2f}/10 - {result['quality_rating']}")
 ```
 
 ## 📊 Results
 
-### Model Performance
+### Expected Model Performance
 
-| Model | MSE | RMSE | R2 Score |
-|-------|-----|------|----------|
-| LinearRegression | 1.864 | 1.365 | 0.018 |
-| LightGBM | 1.804 | 1.343 | - |
-| XGBoost | 1.781 | 1.335 | - |
+RandomForest with hyperparameter tuning typically achieves:
+
+| Metric | Expected Range |
+|--------|----------------|
+| **R² Score** | 0.55 - 0.65 |
+| **RMSE** | 0.55 - 0.65 |
+| **MSE** | 0.30 - 0.42 |
+
+These results are significantly better than the previous customer satisfaction model due to:
+- Better dataset quality (UCI Wine Quality is clean with no missing values)
+- More predictive features (physicochemical properties directly impact wine quality)
+- RandomForest model with hyperparameter tuning
+- Stratified train-test splitting
 
 ### Feature Importance
 
-Key features affecting customer satisfaction:
-1. Payment Value
-2. Price
-3. Freight Value
-4. Product Weight
-5. Product Dimensions
+Key features affecting wine quality:
+1. **Alcohol**: Higher alcohol content often correlates with better quality
+2. **Volatile Acidity**: Lower acidity indicates better quality
+3. **Sulphates**: Antimicrobial properties affect wine preservation
+4. **Citric Acid**: Adds freshness to the wine
+5. **Total Sulfur Dioxide**: Preservative levels
 
 ## 🔧 Configuration
+
+### Data Configuration
+
+Edit `steps/config.py`:
+```python
+class DataConfig(BaseModel):
+    data_url: str = "https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv"
+    wine_type: str = "red"  # Options: "red", "white", "combined"
+```
 
 ### Model Configuration
 
 Edit `steps/config.py`:
 ```python
 class ModelNameConfig(BaseModel):
-    model_name: str = "LinearRegressionModel"  # or "lightgbm", "xgboost", "randomforest"
-    fine_tuning: bool = False
+    model_name: str = "randomforest"  # or "LinearRegressionModel", "lightgbm", "xgboost"
+    fine_tuning: bool = True  # Enable hyperparameter tuning with Optuna
+```
+
+Edit `run_pipeline.py` to change configuration:
+```python
+# Configure data ingestion
+data_config = DataConfig(
+    data_url="https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv",
+    wine_type="red"  # Try "white" or "combined"
+)
+
+# Configure model training
+model_config = ModelNameConfig(
+    model_name="randomforest",  # Options: "LinearRegressionModel", "lightgbm", "xgboost", "randomforest"
+    fine_tuning=True
+)
 ```
 
 ### Deployment Configuration
@@ -392,6 +490,12 @@ find ~/Library -name "mlruns" 2>/dev/null
 mlflow ui --backend-store-uri "file:/path/to/mlruns"
 ```
 
+**Data ingestion fails:**
+```bash
+# Check internet connection and URL accessibility
+curl -I https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv
+```
+
 **AWS deployment fails:**
 ```bash
 # Check AWS credentials
@@ -404,13 +508,15 @@ sam --version
 **Model not found error:**
 ```bash
 # Train a model first
-python run_deployment.py --config deploy
+python run_pipeline.py
 ```
 
 ## 📚 Learn More
 
+- [UCI Wine Quality Dataset](https://archive.ics.uci.edu/ml/datasets/wine+quality)
 - [ZenML Documentation](https://docs.zenml.io)
 - [MLflow Documentation](https://mlflow.org/docs/latest/index.html)
+- [Optuna Documentation](https://optuna.readthedocs.io/)
 - [AWS Lambda Documentation](https://docs.aws.amazon.com/lambda/)
 - [AWS SAM Documentation](https://docs.aws.amazon.com/serverless-application-model/)
 

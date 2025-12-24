@@ -6,18 +6,27 @@ on:
       model_name:
         description: 'Model to train'
         required: true
-        default: 'LinearRegressionModel'
+        default: 'randomforest'
         type: choice
         options:
-          - LinearRegressionModel
+          - randomforest
           - lightgbm
           - xgboost
-          - randomforest
+          - LinearRegressionModel
       fine_tuning:
         description: 'Enable hyperparameter tuning'
         required: false
-        default: false
+        default: true
         type: boolean
+      wine_type:
+        description: 'Wine dataset type'
+        required: false
+        default: 'red'
+        type: choice
+        options:
+          - red
+          - white
+          - combined
   schedule:
     # Run weekly on Sundays at 00:00 UTC
     - cron: '0 0 * * 0'
@@ -60,19 +69,19 @@ jobs:
 
     - name: Train model
       env:
-        MODEL_NAME: ${{ github.event.inputs.model_name || 'LinearRegressionModel' }}
-        FINE_TUNING: ${{ github.event.inputs.fine_tuning || 'false' }}
+        MODEL_NAME: ${{ github.event.inputs.model_name || 'randomforest' }}
+        FINE_TUNING: ${{ github.event.inputs.fine_tuning || 'true' }}
       run: |
-        python run_pipeline.py
+        python run_local.py
 
     - name: Upload model artifacts
       uses: actions/upload-artifact@v4
       with:
         name: trained-model
         path: |
+          model.pkl
+          best_params.json
           mlruns/
-          **/*.pkl
-          **/*.joblib
         retention-days: 30
 
     - name: Upload training metrics

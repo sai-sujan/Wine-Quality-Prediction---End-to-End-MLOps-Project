@@ -1,0 +1,10 @@
+{
+  "randomforest": {
+    "n_estimators": 138,
+    "max_depth": 8,
+    "min_samples_split": 3
+  },
+  "lightgbm": {},
+  "xgboost": {},
+  "last_updated": "2025-12-23T17:21:13.379947"
+}

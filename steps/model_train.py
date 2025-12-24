@@ -2,7 +2,7 @@ import logging
 
 import mlflow
 import pandas as pd
-from model.model_dev import (
+from src.model_dev import (
     HyperparameterTuner,
     LightGBMModel,
     LinearRegressionModel,
@@ -57,7 +57,7 @@ def train_model(
         tuner = HyperparameterTuner(model, x_train, y_train, x_test, y_test)
 
         if config.fine_tuning:
-            best_params = tuner.optimize()
+            best_params = tuner.optimize(use_cached=config.use_cached_params)
             trained_model = model.train(x_train, y_train, **best_params)
         else:
             trained_model = model.train(x_train, y_train)
