@@ -69,22 +69,22 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         else:
             body = event.get('body', {})
 
-        # Extract features
-        import pandas as pd
-        features = pd.DataFrame([{
-            'fixed acidity': body.get('fixed_acidity'),
-            'volatile acidity': body.get('volatile_acidity'),
-            'citric acid': body.get('citric_acid'),
-            'residual sugar': body.get('residual_sugar'),
-            'chlorides': body.get('chlorides'),
-            'free sulfur dioxide': body.get('free_sulfur_dioxide'),
-            'total sulfur dioxide': body.get('total_sulfur_dioxide'),
-            'density': body.get('density'),
-            'pH': body.get('pH'),
-            'sulphates': body.get('sulphates'),
-            'alcohol': body.get('alcohol'),
-            'wine_type_encoded': body.get('wine_type_encoded', 0)
-        }])
+        # Extract features as numpy array (avoids pandas dependency)
+        import numpy as np
+        features = np.array([[
+            body.get('fixed_acidity'),
+            body.get('volatile_acidity'),
+            body.get('citric_acid'),
+            body.get('residual_sugar'),
+            body.get('chlorides'),
+            body.get('free_sulfur_dioxide'),
+            body.get('total_sulfur_dioxide'),
+            body.get('density'),
+            body.get('pH'),
+            body.get('sulphates'),
+            body.get('alcohol'),
+            body.get('wine_type_encoded', 0)
+        ]])
 
         # Make prediction
         prediction = model.predict(features)

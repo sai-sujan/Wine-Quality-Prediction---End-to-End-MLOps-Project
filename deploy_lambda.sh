@@ -34,11 +34,10 @@ cp ../lambda_handler.py .
 mkdir -p src
 cp ../src/s3_utils.py src/ 2>/dev/null || touch src/__init__.py
 
-# Install scikit-learn with minimal dependencies
-echo "📦 Installing scikit-learn + essential dependencies..."
+# Install ONLY scikit-learn and numpy (no pandas to reduce size)
+echo "📦 Installing scikit-learn + numpy (minimal)..."
 pip install --target . \
     scikit-learn \
-    pandas \
     numpy \
     --platform manylinux2014_x86_64 \
     --implementation cp \
@@ -47,8 +46,10 @@ pip install --target . \
     --upgrade \
     -q
 
-# Remove ALL unnecessary files to stay under 250MB (Lambda unzipped limit)
-echo "🧹 Aggressive cleanup..."
+# ULTRA aggressive cleanup to stay under 250MB Lambda limit
+echo "🧹 Ultra-aggressive cleanup..."
+
+# Remove test files and documentation
 find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
 find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
 find . -name "*.pyc" -delete
@@ -56,16 +57,39 @@ find . -name "*.pyo" -delete
 find . -name "*.pyx" -delete
 find . -name "*.c" -delete
 find . -name "*.h" -delete
+find . -name "*.md" -delete
+
+# Remove sklearn datasets and unnecessary modules
 rm -rf ./sklearn/datasets 2>/dev/null || true
-rm -rf ./pandas/tests 2>/dev/null || true
+rm -rf ./sklearn/externals 2>/dev/null || true
+
+# Remove numpy/scipy test files and docs
 rm -rf ./numpy/tests 2>/dev/null || true
+rm -rf ./numpy/doc 2>/dev/null || true
+rm -rf ./numpy/f2py 2>/dev/null || true
 rm -rf ./scipy/tests 2>/dev/null || true
+rm -rf ./scipy/io/tests 2>/dev/null || true
+rm -rf ./scipy/sparse/tests 2>/dev/null || true
+
+# Remove joblib test files
 rm -rf ./joblib/test 2>/dev/null || true
+
+# Remove all .dist-info directories
 rm -rf ./*.dist-info 2>/dev/null || true
+
+# Remove scipy's large optional modules (if not needed by sklearn)
+# Keep only what sklearn actually uses: linalg, optimize, sparse
+rm -rf ./scipy/integrate 2>/dev/null || true
+rm -rf ./scipy/interpolate 2>/dev/null || true
+rm -rf ./scipy/signal 2>/dev/null || true
+rm -rf ./scipy/stats 2>/dev/null || true
+rm -rf ./scipy/ndimage 2>/dev/null || true
+rm -rf ./scipy/spatial 2>/dev/null || true
+rm -rf ./scipy/special 2>/dev/null || true
 
 # Check package size
 PACKAGE_SIZE=$(du -sh . | cut -f1)
-echo "📏 Package size: $PACKAGE_SIZE"
+echo "📏 Package size after cleanup: $PACKAGE_SIZE"
 
 # Create zip file (exclude unnecessary files)
 echo "🗜️  Creating deployment zip..."
