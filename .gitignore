@@ -97,11 +97,16 @@ data/*.xlsx
 !package.json
 !template.yaml
 
-# Model files (if stored locally)
-*.pkl
-*.joblib
-*.h5
-*.pb
+# Model files (keep tracked via .gitkeep)
+artifacts/models/*.pkl
+artifacts/models/*.joblib
+artifacts/models/*.h5
+artifacts/models/*.pb
+!artifacts/models/.gitkeep
+
+# Parameter files
+artifacts/params/*.json
+!artifacts/params/.gitkeep
 
 # Temporary files
 *.tmp
@@ -110,7 +115,11 @@ data/*.xlsx
 tmp/
 temp/
 
-FASTAPI_BENEFITS.md
 # Lambda deployment packages
 lambda_deployment.zip
 lambda_package/
+deployment/aws/lambda/*.zip
+
+# Build artifacts
+*.log
+api.log

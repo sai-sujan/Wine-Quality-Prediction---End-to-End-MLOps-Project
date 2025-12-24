@@ -110,11 +110,11 @@ mkdir -p lambda_package
 cd lambda_package
 
 # Copy Lambda handler
-cp ../lambda_handler.py .
+cp ../lambda/handler.py lambda_handler.py
 
 # Copy s3_utils
 mkdir -p src
-cp ../src/s3_utils.py src/ 2>/dev/null || touch src/__init__.py
+cp ../../../src/utils/s3_utils.py src/ 2>/dev/null || touch src/__init__.py
 
 # NO dependencies installed - they come from layer
 echo "📏 Package size: $(du -sh . | cut -f1)"

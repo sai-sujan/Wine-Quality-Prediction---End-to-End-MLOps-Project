@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-from src.data_cleaning import DataPreProcessingStrategy, DataDivideStrategy
+from src.core.data_cleaning import DataPreProcessingStrategy, DataDivideStrategy
 
 
 class TestDataPreProcessingStrategy:

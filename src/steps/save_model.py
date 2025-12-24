@@ -3,7 +3,7 @@ import logging
 import os
 from sklearn.base import RegressorMixin
 from zenml import step
-from src.s3_utils import S3Handler
+from src.utils.s3_utils import S3Handler
 
 @step
 def save_model(model: RegressorMixin) -> None:

@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import Mock, patch
-from src.s3_utils import S3Handler
+from src.utils.s3_utils import S3Handler
 
 
 class TestS3Handler:

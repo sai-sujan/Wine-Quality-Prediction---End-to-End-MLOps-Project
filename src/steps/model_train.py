@@ -2,7 +2,7 @@ import logging
 
 import mlflow
 import pandas as pd
-from src.model_dev import (
+from src.core.model_dev import (
     HyperparameterTuner,
     LightGBMModel,
     LinearRegressionModel,
