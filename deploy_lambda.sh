@@ -34,9 +34,27 @@ cp ../lambda_handler.py .
 mkdir -p src
 cp ../src/s3_utils.py src/ 2>/dev/null || touch src/__init__.py
 
-# DO NOT install scikit-learn - it will come from Lambda Layer
-# This keeps package size minimal (<5MB vs >70MB)
-echo "📦 Package contains only handler code (scikit-learn from Lambda Layer)"
+# Install ONLY scikit-learn (ultra-minimal)
+echo "📦 Installing scikit-learn (optimized)..."
+pip install --target . \
+    scikit-learn \
+    --platform manylinux2014_x86_64 \
+    --implementation cp \
+    --python-version 3.12 \
+    --only-binary=:all: \
+    --no-deps \
+    -q
+
+# Remove ALL unnecessary files to stay under 50MB
+echo "🧹 Aggressive cleanup..."
+find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
+find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+find . -name "*.pyc" -delete
+find . -name "*.pyo" -delete
+find . -name "*.so.1" -delete 2>/dev/null || true
+rm -rf ./sklearn/datasets/tests 2>/dev/null || true
+rm -rf ./sklearn/datasets/data 2>/dev/null || true
+rm -rf ./joblib/test 2>/dev/null || true
 
 # Create zip file (exclude unnecessary files)
 echo "🗜️  Creating deployment zip..."
@@ -121,10 +139,6 @@ fi
 # Get role ARN
 ROLE_ARN=$(aws iam get-role --role-name "$ROLE_NAME" --query 'Role.Arn' --output text)
 
-# Lambda Layer with scikit-learn (public community layer)
-# This layer includes: scikit-learn, pandas, numpy, scipy
-SKLEARN_LAYER_ARN="arn:aws:lambda:${REGION}:446751924810:layer:python-3-12-scikit-learn-1-5-0:2"
-
 # Create or update Lambda function
 echo "🔧 Deploying Lambda function..."
 if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" &>/dev/null; then
@@ -141,8 +155,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" &
     aws lambda update-function-configuration \
         --function-name "$FUNCTION_NAME" \
         --timeout 30 \
-        --memory-size 512 \
-        --layers "$SKLEARN_LAYER_ARN" \
+        --memory-size 1024 \
         --environment "Variables={S3_BUCKET_NAME=${BUCKET_NAME}}" \
         --region "$REGION"
 else
@@ -154,8 +167,7 @@ else
         --handler lambda_handler.lambda_handler \
         --zip-file fileb://lambda_deployment.zip \
         --timeout 30 \
-        --memory-size 512 \
-        --layers "$SKLEARN_LAYER_ARN" \
+        --memory-size 1024 \
         --environment "Variables={S3_BUCKET_NAME=${BUCKET_NAME}}" \
         --region "$REGION"
 fi
