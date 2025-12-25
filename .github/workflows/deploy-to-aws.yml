@@ -8,8 +8,10 @@ on:
       - 'lambda_handler.py'
       - 'src/s3_utils.py'
       - 'deploy_lambda.sh'
+      - 'deploy_lambda_with_layer.sh'
       - 'deploy_all.sh'
       - 'setup_s3.sh'
+      - 'build_lambda_layer.sh'
       - 'run_aws.py'
       - '.github/workflows/deploy-to-aws.yml'
   workflow_dispatch:
