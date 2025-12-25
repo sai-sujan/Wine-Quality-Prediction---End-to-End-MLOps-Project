@@ -96,7 +96,7 @@ echo "🔧 Step 5: Deploying Lambda function..."
 ROLE_NAME="wine-quality-lambda-role"
 if ! aws iam get-role --role-name "$ROLE_NAME" &>/dev/null; then
     echo "Creating IAM role..."
-    
+
     cat > /tmp/trust-policy.json <<POLICY
 {
   "Version": "2012-10-17",
@@ -120,8 +120,15 @@ POLICY
         --role-name "$ROLE_NAME" \
         --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-    # Add S3 and ECR permissions to Lambda role
-    cat > /tmp/lambda-permissions.json <<POLICY
+    rm /tmp/trust-policy.json
+    echo "✅ IAM role created"
+else
+    echo "✅ IAM role already exists"
+fi
+
+# Update role policy with S3 and ECR permissions (always run to ensure permissions are up to date)
+echo "🔐 Updating Lambda execution role permissions..."
+cat > /tmp/lambda-permissions.json <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -157,15 +164,15 @@ POLICY
 }
 POLICY
 
-    aws iam put-role-policy \
-        --role-name "$ROLE_NAME" \
-        --policy-name "LambdaExecutionPolicy" \
-        --policy-document file:///tmp/lambda-permissions.json
+aws iam put-role-policy \
+    --role-name "$ROLE_NAME" \
+    --policy-name "LambdaExecutionPolicy" \
+    --policy-document file:///tmp/lambda-permissions.json
 
-    rm /tmp/trust-policy.json /tmp/lambda-permissions.json
-    echo "⏳ Waiting for IAM role to propagate..."
-    sleep 10
-fi
+rm /tmp/lambda-permissions.json
+echo "✅ Role permissions updated"
+echo "⏳ Waiting for IAM changes to propagate..."
+sleep 10
 
 ROLE_ARN=$(aws iam get-role --role-name "$ROLE_NAME" --query 'Role.Arn' --output text)
 
