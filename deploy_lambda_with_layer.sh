@@ -49,8 +49,8 @@ pip install \
     -q
 
 echo "🧹 Cleaning up layer..."
-# Aggressive cleanup - but preserve critical numpy modules
-# Remove test directories from sklearn and scipy only (NOT numpy)
+# Conservative cleanup - only remove what's definitely not needed
+# sklearn needs: numpy (all of it), scipy.linalg, scipy.sparse, scipy.special
 rm -rf ./sklearn/tests 2>/dev/null || true
 find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
 find . -name "*.pyc" -delete
@@ -61,7 +61,8 @@ find . -name "*.h" -delete
 find . -name "*.md" -delete
 rm -rf ./sklearn/datasets 2>/dev/null || true
 # Keep ALL of numpy/* - sklearn needs numpy.f2py and numpy._core
-# Do NOT delete anything from numpy directory
+# Keep scipy.linalg, scipy.sparse, scipy.special - required by sklearn
+# Only remove scipy modules that sklearn definitely doesn't use
 rm -rf ./scipy/tests 2>/dev/null || true
 rm -rf ./scipy/integrate 2>/dev/null || true
 rm -rf ./scipy/interpolate 2>/dev/null || true
@@ -69,7 +70,7 @@ rm -rf ./scipy/signal 2>/dev/null || true
 rm -rf ./scipy/stats 2>/dev/null || true
 rm -rf ./scipy/ndimage 2>/dev/null || true
 rm -rf ./scipy/spatial 2>/dev/null || true
-rm -rf ./scipy/special 2>/dev/null || true
+# Keep scipy.special - sklearn's RandomForest needs it
 
 cd ..
 
