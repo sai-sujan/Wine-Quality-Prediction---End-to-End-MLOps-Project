@@ -50,8 +50,9 @@ if [ -z "$LAYER_ARN" ] || [ "$LAYER_ARN" == "None" ]; then
         -q
 
     echo "🧹 Cleaning up layer..."
-    # Aggressive cleanup
-    find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
+    # Aggressive cleanup - but preserve critical numpy modules
+    # Remove tests but preserve numpy._core (needed by numpy itself)
+    find . -type d -name "tests" ! -path "*/numpy/_core/*" -exec rm -rf {} + 2>/dev/null || true
     find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
     find . -name "*.pyc" -delete
     find . -name "*.pyo" -delete
@@ -60,8 +61,9 @@ if [ -z "$LAYER_ARN" ] || [ "$LAYER_ARN" == "None" ]; then
     find . -name "*.h" -delete
     find . -name "*.md" -delete
     rm -rf ./sklearn/datasets 2>/dev/null || true
-    rm -rf ./numpy/tests 2>/dev/null || true
-    rm -rf ./numpy/f2py 2>/dev/null || true
+    # Keep numpy/f2py and numpy/_core - they're needed by numpy imports
+    # Removed: rm -rf ./numpy/tests 2>/dev/null || true
+    # Removed: rm -rf ./numpy/f2py 2>/dev/null || true
     rm -rf ./scipy/tests 2>/dev/null || true
     rm -rf ./scipy/integrate 2>/dev/null || true
     rm -rf ./scipy/interpolate 2>/dev/null || true
