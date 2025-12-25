@@ -7,12 +7,12 @@ on:
     paths:
       - 'lambda_handler.py'
       - 'src/s3_utils.py'
-      - 'deploy_lambda.sh'
-      - 'deploy_lambda_with_layer.sh'
+      - 'Dockerfile'
+      - 'deploy_lambda_docker.sh'
       - 'deploy_all.sh'
       - 'setup_s3.sh'
-      - 'build_lambda_layer.sh'
       - 'run_aws.py'
+      - 'requirements.txt'
       - '.github/workflows/deploy-to-aws.yml'
   workflow_dispatch:
     inputs:
@@ -73,11 +73,11 @@ jobs:
         zenml integration install mlflow -y
         python run_aws.py
 
-    - name: Deploy Lambda function with Layer
+    - name: Deploy Lambda function with Docker
       if: ${{ github.event.inputs.deploy_lambda == 'true' || github.event_name == 'push' }}
       run: |
-        chmod +x deploy_lambda_with_layer.sh
-        ./deploy_lambda_with_layer.sh
+        chmod +x deploy_lambda_docker.sh
+        ./deploy_lambda_docker.sh
 
     - name: Get Lambda endpoint
       id: lambda-url
