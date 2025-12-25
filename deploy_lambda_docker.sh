@@ -120,21 +120,43 @@ ROLE_ARN=$(aws iam get-role --role-name "$ROLE_NAME" --query 'Role.Arn' --output
 
 # Create or update Lambda function
 if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" &>/dev/null; then
-    echo "🔄 Updating existing function..."
-    aws lambda update-function-code \
-        --function-name "$FUNCTION_NAME" \
-        --image-uri "$ECR_URI:$IMAGE_TAG" \
-        --region "$REGION"
-    
-    echo "⏳ Waiting for update..."
-    aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
-    
-    aws lambda update-function-configuration \
-        --function-name "$FUNCTION_NAME" \
-        --timeout 30 \
-        --memory-size 1024 \
-        --environment "Variables={S3_BUCKET_NAME=${BUCKET_NAME}}" \
-        --region "$REGION"
+    # Check package type of existing function
+    PACKAGE_TYPE=$(aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" --query 'Configuration.PackageType' --output text)
+
+    if [ "$PACKAGE_TYPE" = "Zip" ]; then
+        echo "⚠️  Existing function uses Zip package type, need to recreate for Docker..."
+        echo "🗑️  Deleting old ZIP-based function..."
+        aws lambda delete-function --function-name "$FUNCTION_NAME" --region "$REGION"
+        echo "⏳ Waiting for deletion to complete..."
+        sleep 5
+
+        echo "✨ Creating new Docker-based function..."
+        aws lambda create-function \
+            --function-name "$FUNCTION_NAME" \
+            --package-type Image \
+            --code ImageUri="$ECR_URI:$IMAGE_TAG" \
+            --role "$ROLE_ARN" \
+            --timeout 30 \
+            --memory-size 1024 \
+            --environment "Variables={S3_BUCKET_NAME=${BUCKET_NAME}}" \
+            --region "$REGION"
+    else
+        echo "🔄 Updating existing Docker-based function..."
+        aws lambda update-function-code \
+            --function-name "$FUNCTION_NAME" \
+            --image-uri "$ECR_URI:$IMAGE_TAG" \
+            --region "$REGION"
+
+        echo "⏳ Waiting for update..."
+        aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
+
+        aws lambda update-function-configuration \
+            --function-name "$FUNCTION_NAME" \
+            --timeout 30 \
+            --memory-size 1024 \
+            --environment "Variables={S3_BUCKET_NAME=${BUCKET_NAME}}" \
+            --region "$REGION"
+    fi
 else
     echo "✨ Creating new function..."
     aws lambda create-function \
