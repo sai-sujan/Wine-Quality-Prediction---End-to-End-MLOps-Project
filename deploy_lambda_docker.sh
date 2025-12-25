@@ -35,6 +35,35 @@ else
 fi
 
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO_NAME}"
+
+# Set ECR repository policy to allow Lambda to pull images
+echo "🔐 Setting ECR repository permissions for Lambda..."
+cat > /tmp/ecr-policy.json <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "LambdaECRImageRetrievalPolicy",
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Action": [
+        "ecr:BatchGetImage",
+        "ecr:GetDownloadUrlForLayer"
+      ]
+    }
+  ]
+}
+POLICY
+
+aws ecr set-repository-policy \
+    --repository-name "$ECR_REPO_NAME" \
+    --policy-text file:///tmp/ecr-policy.json \
+    --region "$REGION"
+
+rm /tmp/ecr-policy.json
+echo "✅ ECR permissions configured"
 echo ""
 
 # Step 2: Build Docker image
