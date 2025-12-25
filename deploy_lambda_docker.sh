@@ -36,8 +36,8 @@ fi
 
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${REGION}.amazonaws.com/${ECR_REPO_NAME}"
 
-# Set ECR repository policy to allow Lambda to pull images
-echo "🔐 Setting ECR repository permissions for Lambda..."
+# Try to set ECR repository policy to allow Lambda to pull images
+echo "🔐 Configuring ECR repository permissions for Lambda..."
 cat > /tmp/ecr-policy.json <<POLICY
 {
   "Version": "2012-10-17",
@@ -57,13 +57,17 @@ cat > /tmp/ecr-policy.json <<POLICY
 }
 POLICY
 
-aws ecr set-repository-policy \
+if aws ecr set-repository-policy \
     --repository-name "$ECR_REPO_NAME" \
     --policy-text file:///tmp/ecr-policy.json \
-    --region "$REGION"
+    --region "$REGION" 2>/dev/null; then
+    echo "✅ ECR repository policy configured"
+else
+    echo "⚠️  Could not set ECR repository policy (permission denied)"
+    echo "   ECR permissions will be added to Lambda execution role instead"
+fi
 
 rm /tmp/ecr-policy.json
-echo "✅ ECR permissions configured"
 echo ""
 
 # Step 2: Build Docker image
@@ -116,11 +120,13 @@ POLICY
         --role-name "$ROLE_NAME" \
         --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-    cat > /tmp/s3-policy.json <<POLICY
+    # Add S3 and ECR permissions to Lambda role
+    cat > /tmp/lambda-permissions.json <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "S3Access",
       "Effect": "Allow",
       "Action": [
         "s3:GetObject",
@@ -130,6 +136,22 @@ POLICY
         "arn:aws:s3:::${BUCKET_NAME}/*",
         "arn:aws:s3:::${BUCKET_NAME}"
       ]
+    },
+    {
+      "Sid": "ECRImageAccess",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:BatchCheckLayerAvailability"
+      ],
+      "Resource": "arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/${ECR_REPO_NAME}"
+    },
+    {
+      "Sid": "ECRAuthToken",
+      "Effect": "Allow",
+      "Action": "ecr:GetAuthorizationToken",
+      "Resource": "*"
     }
   ]
 }
@@ -137,10 +159,10 @@ POLICY
 
     aws iam put-role-policy \
         --role-name "$ROLE_NAME" \
-        --policy-name "S3AccessPolicy" \
-        --policy-document file:///tmp/s3-policy.json
+        --policy-name "LambdaExecutionPolicy" \
+        --policy-document file:///tmp/lambda-permissions.json
 
-    rm /tmp/trust-policy.json /tmp/s3-policy.json
+    rm /tmp/trust-policy.json /tmp/lambda-permissions.json
     echo "⏳ Waiting for IAM role to propagate..."
     sleep 10
 fi
