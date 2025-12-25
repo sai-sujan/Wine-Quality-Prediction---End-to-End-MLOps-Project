@@ -23,85 +23,81 @@ fi
 echo "✅ AWS credentials verified"
 echo ""
 
-# Step 1: Build and publish Lambda Layer (if not exists)
+# Step 1: Build and publish Lambda Layer
 echo "🏗️  Step 1: Creating Lambda Layer..."
-LAYER_ARN=$(aws lambda list-layer-versions --layer-name "$LAYER_NAME" --region "$REGION" --query 'LayerVersions[0].LayerVersionArn' --output text 2>/dev/null || echo "")
 
-if [ -z "$LAYER_ARN" ] || [ "$LAYER_ARN" == "None" ]; then
-    echo "📦 Building new Lambda Layer..."
+# Always rebuild layer to ensure latest dependencies and fixes
+echo "📦 Building new Lambda Layer (forced rebuild to include latest numpy fix)..."
 
-    # Create layer directory structure
-    mkdir -p lambda_layer/python
-    cd lambda_layer/python
+# Create layer directory structure
+mkdir -p lambda_layer/python
+cd lambda_layer/python
 
-    # Install dependencies for the layer
-    echo "📦 Installing scikit-learn, numpy, scipy, joblib..."
-    pip install \
-        scikit-learn \
-        numpy \
-        scipy \
-        joblib \
-        --target . \
-        --platform manylinux2014_x86_64 \
-        --implementation cp \
-        --python-version 3.12 \
-        --only-binary=:all: \
-        --upgrade \
-        -q
+# Install dependencies for the layer
+echo "📦 Installing scikit-learn, numpy, scipy, joblib..."
+pip install \
+    scikit-learn \
+    numpy \
+    scipy \
+    joblib \
+    --target . \
+    --platform manylinux2014_x86_64 \
+    --implementation cp \
+    --python-version 3.12 \
+    --only-binary=:all: \
+    --upgrade \
+    -q
 
-    echo "🧹 Cleaning up layer..."
-    # Aggressive cleanup - but preserve critical numpy modules
-    # Remove test directories from sklearn and scipy only (NOT numpy)
-    rm -rf ./sklearn/tests 2>/dev/null || true
-    find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
-    find . -name "*.pyc" -delete
-    find . -name "*.pyo" -delete
-    find . -name "*.pyx" -delete
-    find . -name "*.c" -delete
-    find . -name "*.h" -delete
-    find . -name "*.md" -delete
-    rm -rf ./sklearn/datasets 2>/dev/null || true
-    # Keep ALL of numpy/* - sklearn needs numpy.f2py and numpy._core
-    # Do NOT delete anything from numpy directory
-    rm -rf ./scipy/tests 2>/dev/null || true
-    rm -rf ./scipy/integrate 2>/dev/null || true
-    rm -rf ./scipy/interpolate 2>/dev/null || true
-    rm -rf ./scipy/signal 2>/dev/null || true
-    rm -rf ./scipy/stats 2>/dev/null || true
-    rm -rf ./scipy/ndimage 2>/dev/null || true
-    rm -rf ./scipy/spatial 2>/dev/null || true
-    rm -rf ./scipy/special 2>/dev/null || true
+echo "🧹 Cleaning up layer..."
+# Aggressive cleanup - but preserve critical numpy modules
+# Remove test directories from sklearn and scipy only (NOT numpy)
+rm -rf ./sklearn/tests 2>/dev/null || true
+find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
+find . -name "*.pyc" -delete
+find . -name "*.pyo" -delete
+find . -name "*.pyx" -delete
+find . -name "*.c" -delete
+find . -name "*.h" -delete
+find . -name "*.md" -delete
+rm -rf ./sklearn/datasets 2>/dev/null || true
+# Keep ALL of numpy/* - sklearn needs numpy.f2py and numpy._core
+# Do NOT delete anything from numpy directory
+rm -rf ./scipy/tests 2>/dev/null || true
+rm -rf ./scipy/integrate 2>/dev/null || true
+rm -rf ./scipy/interpolate 2>/dev/null || true
+rm -rf ./scipy/signal 2>/dev/null || true
+rm -rf ./scipy/stats 2>/dev/null || true
+rm -rf ./scipy/ndimage 2>/dev/null || true
+rm -rf ./scipy/spatial 2>/dev/null || true
+rm -rf ./scipy/special 2>/dev/null || true
 
-    cd ..
+cd ..
 
-    # Create zip for layer
-    echo "🗜️  Creating layer zip..."
-    zip -r ../sklearn_layer.zip python -q
+# Create zip for layer
+echo "🗜️  Creating layer zip..."
+zip -r ../sklearn_layer.zip python -q
 
-    cd ..
-    rm -rf lambda_layer
+cd ..
+rm -rf lambda_layer
 
-    # Upload layer to S3
-    LAYER_S3_KEY="lambda-layers/sklearn_layer_$(date +%Y%m%d_%H%M%S).zip"
-    echo "📤 Uploading layer to S3..."
-    aws s3 cp sklearn_layer.zip "s3://${BUCKET_NAME}/${LAYER_S3_KEY}" --region "$REGION"
+# Upload layer to S3
+LAYER_S3_KEY="lambda-layers/sklearn_layer_$(date +%Y%m%d_%H%M%S).zip"
+echo "📤 Uploading layer to S3..."
+aws s3 cp sklearn_layer.zip "s3://${BUCKET_NAME}/${LAYER_S3_KEY}" --region "$REGION"
 
-    # Publish Lambda Layer from S3
-    echo "🚀 Publishing Lambda Layer..."
-    LAYER_ARN=$(aws lambda publish-layer-version \
-        --layer-name "$LAYER_NAME" \
-        --description "Scikit-learn, NumPy, SciPy, Joblib for Python 3.12" \
-        --content "S3Bucket=${BUCKET_NAME},S3Key=${LAYER_S3_KEY}" \
-        --compatible-runtimes python3.12 \
-        --region "$REGION" \
-        --query 'LayerVersionArn' \
-        --output text)
+# Publish Lambda Layer from S3
+echo "🚀 Publishing Lambda Layer..."
+LAYER_ARN=$(aws lambda publish-layer-version \
+    --layer-name "$LAYER_NAME" \
+    --description "Scikit-learn, NumPy, SciPy, Joblib for Python 3.12" \
+    --content "S3Bucket=${BUCKET_NAME},S3Key=${LAYER_S3_KEY}" \
+    --compatible-runtimes python3.12 \
+    --region "$REGION" \
+    --query 'LayerVersionArn' \
+    --output text)
 
-    rm -f sklearn_layer.zip
-    echo "✅ Layer published: $LAYER_ARN"
-else
-    echo "✅ Using existing layer: $LAYER_ARN"
-fi
+rm -f sklearn_layer.zip
+echo "✅ Layer published: $LAYER_ARN"
 
 echo ""
 
