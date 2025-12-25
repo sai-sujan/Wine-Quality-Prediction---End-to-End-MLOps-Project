@@ -79,7 +79,14 @@ echo "🗜️  Creating layer zip..."
 zip -r ../sklearn_layer.zip python -q
 
 cd ..
-rm -rf lambda_layer
+# Force remove lambda_layer directory
+rm -rf lambda_layer 2>/dev/null || true
+# If still exists, try with sudo (shouldn't be needed but just in case)
+if [ -d lambda_layer ]; then
+    echo "⚠️  Forcing cleanup of lambda_layer..."
+    chmod -R 755 lambda_layer 2>/dev/null || true
+    rm -rf lambda_layer
+fi
 
 # Upload layer to S3
 LAYER_S3_KEY="lambda-layers/sklearn_layer_$(date +%Y%m%d_%H%M%S).zip"
