@@ -50,7 +50,7 @@ if [ -z "$LAYER_ARN" ] || [ "$LAYER_ARN" == "None" ]; then
         -q
 
     echo "🧹 Cleaning up layer..."
-    # Aggressive cleanup
+    # Aggressive cleanup - but keep numpy.f2py (needed by sklearn)
     find . -type d -name "tests" -exec rm -rf {} + 2>/dev/null || true
     find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
     find . -name "*.pyc" -delete
@@ -61,7 +61,7 @@ if [ -z "$LAYER_ARN" ] || [ "$LAYER_ARN" == "None" ]; then
     find . -name "*.md" -delete
     rm -rf ./sklearn/datasets 2>/dev/null || true
     rm -rf ./numpy/tests 2>/dev/null || true
-    rm -rf ./numpy/f2py 2>/dev/null || true
+    # Keep numpy/f2py - it's needed by numpy imports
     rm -rf ./scipy/tests 2>/dev/null || true
     rm -rf ./scipy/integrate 2>/dev/null || true
     rm -rf ./scipy/interpolate 2>/dev/null || true
