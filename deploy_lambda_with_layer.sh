@@ -49,8 +49,8 @@ pip install \
     -q
 
 echo "🧹 Cleaning up layer..."
-# Conservative cleanup - only remove what's definitely not needed
-# sklearn needs: numpy (all of it), scipy.linalg, scipy.sparse, scipy.special
+# Minimal cleanup - only remove test files and build artifacts
+# sklearn needs most of numpy and scipy, so keep almost everything
 rm -rf ./sklearn/tests 2>/dev/null || true
 find . -type d -name "*.dist-info" -exec rm -rf {} + 2>/dev/null || true
 find . -name "*.pyc" -delete
@@ -60,17 +60,13 @@ find . -name "*.c" -delete
 find . -name "*.h" -delete
 find . -name "*.md" -delete
 rm -rf ./sklearn/datasets 2>/dev/null || true
-# Keep ALL of numpy/* - sklearn needs numpy.f2py and numpy._core
-# Keep scipy.linalg, scipy.sparse, scipy.special - required by sklearn
-# Only remove scipy modules that sklearn definitely doesn't use
+# Keep ALL of numpy/* - sklearn needs numpy.f2py, numpy._core, etc.
+# Keep ALL of scipy/* - sklearn uses: linalg, sparse, special, stats, and more
+# Only safe to remove: tests and a few unused scipy modules
 rm -rf ./scipy/tests 2>/dev/null || true
+# These scipy modules are rarely used by sklearn, but to be safe, only remove integrate
 rm -rf ./scipy/integrate 2>/dev/null || true
-rm -rf ./scipy/interpolate 2>/dev/null || true
-rm -rf ./scipy/signal 2>/dev/null || true
-rm -rf ./scipy/stats 2>/dev/null || true
-rm -rf ./scipy/ndimage 2>/dev/null || true
-rm -rf ./scipy/spatial 2>/dev/null || true
-# Keep scipy.special - sklearn's RandomForest needs it
+# Keep everything else to avoid runtime errors
 
 cd ..
 
