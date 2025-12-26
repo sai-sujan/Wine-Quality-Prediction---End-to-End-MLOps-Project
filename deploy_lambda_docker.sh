@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Use full path for AWS CLI
+export PATH="/usr/local/bin:$PATH"
+
 # Disable AWS CLI pager
 export AWS_PAGER=""
 
@@ -251,6 +254,16 @@ if [ -z "$API_ID" ]; then
     echo "✅ API Gateway created"
 else
     echo "✅ API Gateway already exists"
+
+    # Ensure permission exists even if API Gateway already exists
+    echo "🔐 Ensuring API Gateway has permission to invoke Lambda..."
+    aws lambda add-permission \
+        --function-name "$FUNCTION_NAME" \
+        --statement-id apigateway-invoke \
+        --action lambda:InvokeFunction \
+        --principal apigateway.amazonaws.com \
+        --source-arn "arn:aws:execute-api:${REGION}:${ACCOUNT_ID}:${API_ID}/*/*" \
+        --region "$REGION" 2>/dev/null || echo "✅ Permission already exists"
 fi
 
 API_ENDPOINT=$(aws apigatewayv2 get-apis --region "$REGION" --query "Items[?ApiId=='${API_ID}'].ApiEndpoint" --output text)
