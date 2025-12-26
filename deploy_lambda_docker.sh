@@ -161,8 +161,13 @@ aws iam put-role-policy \
 
 rm /tmp/lambda-permissions.json
 echo "✅ Role permissions updated"
-echo "⏳ Waiting for IAM changes to propagate..."
-sleep 10
+
+# Verify the policy was attached
+echo "🔍 Verifying role policy..."
+aws iam get-role-policy --role-name "$ROLE_NAME" --policy-name "LambdaExecutionPolicy" --query 'PolicyDocument.Statement[?Sid==`ECRFullAccess`]' --output json
+
+echo "⏳ Waiting for IAM changes to propagate (30 seconds)..."
+sleep 30
 
 ROLE_ARN=$(aws iam get-role --role-name "$ROLE_NAME" --query 'Role.Arn' --output text)
 
