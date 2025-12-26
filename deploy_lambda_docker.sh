@@ -145,19 +145,9 @@ cat > /tmp/lambda-permissions.json <<POLICY
       ]
     },
     {
-      "Sid": "ECRImageAccess",
+      "Sid": "ECRFullAccess",
       "Effect": "Allow",
-      "Action": [
-        "ecr:GetDownloadUrlForLayer",
-        "ecr:BatchGetImage",
-        "ecr:BatchCheckLayerAvailability"
-      ],
-      "Resource": "arn:aws:ecr:${REGION}:${ACCOUNT_ID}:repository/${ECR_REPO_NAME}"
-    },
-    {
-      "Sid": "ECRAuthToken",
-      "Effect": "Allow",
-      "Action": "ecr:GetAuthorizationToken",
+      "Action": "ecr:*",
       "Resource": "*"
     }
   ]
