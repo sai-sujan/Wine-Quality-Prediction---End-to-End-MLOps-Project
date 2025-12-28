@@ -1,5 +1,10 @@
 # 🍷 Wine Quality Prediction - End-to-End MLOps Project
 <img width="2816" height="1536" alt="Gemini_Generated_Image_ebns97ebns97ebns-Picsart-AiImageEnhancer" src="https://github.com/user-attachments/assets/34292e81-7b00-4f60-80ce-b61749aa6ff1" />
+<img width="1699" height="928" alt="Screenshot 2025-12-27 at 8 08 29 PM" src="https://github.com/user-attachments/assets/7aa439d7-10bf-4494-b72f-13baf10c6376" />
+<img width="1699" height="928" alt="Screenshot 2025-12-27 at 8 17 39 PM" src="https://github.com/user-attachments/assets/c92e22ee-e673-478f-82ba-13c7d43d41d1" />
+
+
+
 
 
 
