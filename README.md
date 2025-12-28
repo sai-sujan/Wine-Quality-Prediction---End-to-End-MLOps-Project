@@ -1,4 +1,7 @@
 # 🍷 Wine Quality Prediction - End-to-End MLOps Project
+<img width="2816" height="1536" alt="Gemini_Generated_Image_ebns97ebns97ebns-Picsart-AiImageEnhancer" src="https://github.com/user-attachments/assets/34292e81-7b00-4f60-80ce-b61749aa6ff1" />
+
+
 
 A production-ready MLOps pipeline for predicting wine quality scores using ZenML, MLflow, and AWS Lambda.
 
